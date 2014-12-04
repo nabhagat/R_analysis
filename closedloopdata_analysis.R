@@ -63,10 +63,11 @@ find_next_response_index <- function(response_trigs,catch_trigs){
 directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 
 # Changes to be made
-Subject_name <- "JF"        #1 JF 0.0232
-closeloop_Sess_num <- 5       #2
-Block_num <- c(2:9)         #3
-velocity_threshold <- 0.0232  #4
+Subject_name <- "BNBO"        #1 JF 0.0232
+closeloop_Sess_num <- 3       #2
+Block_num <- c(5,6,9)         #3
+# Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
+velocity_threshold <- 0.0267  #4
 
 Total_num_of_trials <- NULL
 Successful_trials <- NULL
@@ -118,7 +119,7 @@ for (bc in seq_along(Block_num)){
       # Filter the velocity and compute magnitude
       filt_vel <- abs(sgolayfilt(cl_kinematics_data$Elbow_velocity,p = 1,n = 201))
       vel_triggers <- numeric(length(filt_vel))
-      vel_triggers[filt_vel >= velocity_threshold] <- 5
+      vel_triggers[filt_vel >= velocity_threshold] <- 5   # Digitize 0 or 5 as trigger levels
       vel_triggers_initial <- ExtractUniqueTriggers(vel_triggers,polarity = 1)
       trig_indices <- which(vel_triggers_initial == 1)
       diff_trig_indices <- diff(trig_indices)
@@ -126,11 +127,11 @@ for (bc in seq_along(Block_num)){
       vel_trigger_mod <- numeric(length(vel_triggers_initial))
       vel_trigger_mod[trig_indices] <- 1
       
-      # Get first trigger instant
+      # Get first sample whe a trigger signal was generated
       cl_kinematics_data$Target_shown <- ExtractUniqueTriggers(cl_kinematics_data$Target_shown)
       cl_kinematics_data$Target_reached <- ExtractUniqueTriggers(cl_kinematics_data$Target_reached)
       
-      # Correct for start of block triggers
+      # Correct for start of block triggers - set them to zero in Target_shown, Target_reached
       temp_intersect <- intersect(which(cl_kinematics_data$Target_shown == 1), which(cl_kinematics_data$Target_reached == 1))
       cl_kinematics_data$Target_shown[temp_intersect] <- 0
       cl_kinematics_data$Target_reached[temp_intersect] <- 0
@@ -146,23 +147,19 @@ for (bc in seq_along(Block_num)){
         cl_kinematics_data[which(cl_kinematics_data$Timeout == 1),"Move_onset"] <- 0
       }
       
-      # Plot all triggers
+      # Plot all triggers - How to create better plots?
       mycolors <- c("green","magenta","blue","red","black","green")
       #plot.ts(cl_kinematics_data[,c("Catch","Target_shown","Target_reached","Move_onset","Timeout")],plot.type = "single",col = mycolors, xy.labels = "")
       data_to_plot <- data.frame(filt_vel,vel_trigger_mod,cl_kinematics_data[,c("Target_shown","Target_reached","Move_onset","Timeout")])
       plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,2))
             
-      # Remove Catch trials from valid trials cound; Correct for Catch Trials
+      # Remove Catch trials from Valid trials count i.e. correct for Catch Trials
       if (Subject_name == "JF"){
         # DO NOT Combine Target_reached + Timeout
         end_trial <- cl_kinematics_data$Target_reached
         all_response_indices <- which(end_trial==1)
-        ###all_response_indices <- all_response_indices[-1]  # Remove start and end of trial trigger
-        #all_response_indices <- all_response_indices[-length(all_response_indices)] # Remove end of trial trigger
         catch_indices <- which(cl_kinematics_data$Catch == 1)
         all_stimulus_indices <- which(cl_kinematics_data$Target_shown == 1)
-        ###all_stimulus_indices <- all_stimulus_indices[-1]  # Remove start and end of trial trigger
-        #all_stimulus_indices <- all_stimulus_indices[-length(all_stimulus_indices)] # Remove end of trial trigger
         nearest_stimulus_indices <- catch_indices    # Since Catch and Target shown triggers overlap
         nearest_response_indices <- find_next_response_index(all_response_indices,catch_indices)
       }
@@ -170,15 +167,13 @@ for (bc in seq_along(Block_num)){
         # Combine Target_reached + Timeout
         end_trial <- cl_kinematics_data$Target_reached + cl_kinematics_data$Timeout
         all_response_indices <- which(end_trial==1)
-        ###all_response_indices <- all_response_indices[-1]  # Remove start of trial trigger
         catch_indices <- which(cl_kinematics_data$Catch == 1)
         all_stimulus_indices <- which(cl_kinematics_data$Target_shown == 1)
-        ###all_stimulus_indices <- all_stimulus_indices[-1]  # Remove start of trial trigger
         nearest_stimulus_indices <- find_next_stimulus_index(all_stimulus_indices,catch_indices)
         nearest_response_indices <- find_next_response_index(all_response_indices,catch_indices)
       }
       
-      # Create cl_trial_stats that contains 10 factors
+      # Create cl_trial_stats that contains 14 factors
       cl_trial_stats <- data.frame(
                               Block_number = rep_len(Block_num[bc],length(all_stimulus_indices)),
                               Start_of_trial = all_stimulus_indices,
@@ -202,10 +197,32 @@ for (bc in seq_along(Block_num)){
       adj_start_of_trial <- floor(cl_trial_stats$Start_of_trial/2)    # Downsample to 500 Hz
       adj_end_of_trial <- floor(cl_trial_stats$End_of_trial/2)
       
+      for (m in seq_along(all_stimulus_indices)){
+        kinematic_data_trial_interval <- c(all_stimulus_indices[m],all_response_indices[m])
+        
+        if(1 %in% cl_kinematics_data$Move_onset[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]]){
+          # Intent was detected
+          cl_trial_stats$Intent_detected[m] <- 1
+          cl_trial_stats$Time_to_trigger[m] <- 
+            which(cl_kinematics_data$Move_onset[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]] == 1)/1000  # Fs = 1000 Hz for kinematics data
+        }
+        else{ 
+          #Timeout occured, intent was not detected
+          cl_trial_stats$Intent_detected[m] <- 0
+          cl_trial_stats$Time_to_trigger[m] <- (kinematic_data_trial_interval[2] - kinematic_data_trial_interval[1])/1000
+        }
+        
+        cl_trial_stats$Number_of_attempts[m] <- 
+          length(which(vel_trigger_mod[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]] == 1))
+      }
+
+
+
+      # Determine values of features when Intent was detected i.e. last EEG_GO decision(marker 300)
+      # We have all EEG_GO decision available - use move_counts 
       # Subtract start/stop prediction index
       # This subtraction also compensates for the delay between intiation of EEG and kinematic data capture
-      cl_BMI_data$marker_block[,1] <- cl_BMI_data$marker_block[,1] - cl_BMI_data$marker_block[min(which(cl_BMI_data$marker_block[,2]==50)),1]
-      
+      cl_BMI_data$marker_block[,1] <- cl_BMI_data$marker_block[,1] - cl_BMI_data$marker_block[min(which(cl_BMI_data$marker_block[,2]==50)),1]      
       for (k in seq_along(adj_start_of_trial)){
           bmi_data_trial_interval <- intersect(which(cl_BMI_data$marker_block[,1] >= adj_start_of_trial[k]),
                     which(cl_BMI_data$marker_block[,1] < adj_end_of_trial[k]))
@@ -214,13 +231,15 @@ for (bc in seq_along(Block_num)){
           }
           if (400 %in% cl_BMI_data$marker_block[bmi_data_trial_interval,2]){
             cl_trial_stats$EEG_EMG_decisions[k] <- 1
-            # Copy feature vectors
+            # Copy feature vectors for EEG_GO only when EEG_EMG_GO occurs  
             f_index <- bmi_data_trial_interval[max(which(cl_BMI_data$marker_block[bmi_data_trial_interval,2] == 300))]
-            feature_index <- floor((cl_BMI_data$marker_block[f_index,1]/500)*20)
-            cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])
-            
-          } 
-        }
+            feature_index <- floor((cl_BMI_data$marker_block[f_index,1]/500)*20) # Resample to 20 Hz
+            cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])            
+          }
+          # Segment EEG signal during when Intent is detected
+          # Write time stamp to .txt file
+      }
+      
       
 # Correct for Catch Trials after finding nearest stimulus and response indices above
 #      for (i in seq_along(nearest_stimulus_indices)){
@@ -261,24 +280,7 @@ for (bc in seq_along(Block_num)){
 #                                     Number_of_move_attempts = numeric(length(trial_start_indices)),
 #                                     Successful_move_attempts = numeric(length(trial_start_indices)))
       
-      for (m in seq_along(all_stimulus_indices)){
-        kinematic_data_trial_interval <- c(all_stimulus_indices[m],all_response_indices[m])
-        
-        if(1 %in% cl_kinematics_data$Move_onset[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]]){
-          # Intent was detected
-          cl_trial_stats$Intent_detected[m] <- 1
-          cl_trial_stats$Time_to_trigger[m] <- 
-            which(cl_kinematics_data$Move_onset[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]] == 1)/1000  # Fs = 1000 Hz for kinematics data
-        }
-        else{ 
-          #Timeout occured, intent was not detected
-          cl_trial_stats$Intent_detected[m] <- 0
-          cl_trial_stats$Time_to_trigger[m] <- (kinematic_data_trial_interval[2] - kinematic_data_trial_interval[1])/1000
-        }
-          
-        cl_trial_stats$Number_of_attempts[m] <- 
-          length(which(vel_trigger_mod[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]] == 1))
-      }
+      
      
 #      Successful_trials <- c(Successful_trials, as.numeric(length(which(cl_kinematics_data$Move_onset == 1))))
 #      Total_num_of_trials <- c(Total_num_of_trials, as.numeric(length(which(cl_kinematics_data$Target_shown ==  1))))      
