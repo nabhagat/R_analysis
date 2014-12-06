@@ -127,7 +127,7 @@ for subj_n = 1:1
         if ~exist(fileid,'file')
             continue
         end
-        cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',1,1); 
+        cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
         unique_blocks = unique(cl_ses_data(:,1));
         for m = 1:length(unique_blocks)
             block_n = unique_blocks(m);

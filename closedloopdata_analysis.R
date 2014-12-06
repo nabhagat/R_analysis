@@ -2,6 +2,7 @@
 #setwd("/home//nikunj//Documents//R_programs")
 library(signal)
 library(R.matlab)
+library(pracma)
 ############################## FUNCTIONS
 
 ExtractUniqueTriggers <- function(TrigIn, lookback = 1, polarity = 0){
@@ -65,13 +66,15 @@ directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 # Changes to be made
 Subject_name <- "BNBO"        #1 JF 0.0232
 closeloop_Sess_num <- 3       #2
-Block_num <- c(5,6,9)         #3
+Block_num <- c(5)         #3
 # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
 velocity_threshold <- 0.0267  #4
 
 Total_num_of_trials <- NULL
 Successful_trials <- NULL
 Catch_trials <- NULL
+Failed_Catch_trials <- NULL
+
 cl_session_stats <- data.frame(
                               Block_number = numeric(),
                               Start_of_trial = numeric(),
@@ -222,10 +225,11 @@ for (bc in seq_along(Block_num)){
       # We have all EEG_GO decision available - use move_counts 
       # Subtract start/stop prediction index
       # This subtraction also compensates for the delay between intiation of EEG and kinematic data capture
-      cl_BMI_data$marker_block[,1] <- cl_BMI_data$marker_block[,1] - cl_BMI_data$marker_block[min(which(cl_BMI_data$marker_block[,2]==50)),1]      
+      #cl_BMI_data$marker_block[,1] <- cl_BMI_data$marker_block[,1] - cl_BMI_data$marker_block[min(which(cl_BMI_data$marker_block[,2]==50)),1]
+      adj_marker_block_time_stamps <- cl_BMI_data$marker_block[,1] - cl_BMI_data$marker_block[min(which(cl_BMI_data$marker_block[,2]==50)),1]
       for (k in seq_along(adj_start_of_trial)){
-          bmi_data_trial_interval <- intersect(which(cl_BMI_data$marker_block[,1] >= adj_start_of_trial[k]),
-                    which(cl_BMI_data$marker_block[,1] < adj_end_of_trial[k]))
+          bmi_data_trial_interval <- intersect(which(adj_marker_block_time_stamps >= adj_start_of_trial[k]),
+                    which(adj_marker_block_time_stamps < adj_end_of_trial[k]))
           if (300 %in% cl_BMI_data$marker_block[bmi_data_trial_interval,2]){
             cl_trial_stats$EEG_decisions[k] <- 1
           }
@@ -233,8 +237,25 @@ for (bc in seq_along(Block_num)){
             cl_trial_stats$EEG_EMG_decisions[k] <- 1
             # Copy feature vectors for EEG_GO only when EEG_EMG_GO occurs  
             f_index <- bmi_data_trial_interval[max(which(cl_BMI_data$marker_block[bmi_data_trial_interval,2] == 300))]
-            feature_index <- floor((cl_BMI_data$marker_block[f_index,1]/500)*20) # Resample to 20 Hz
+            spatial_avg_index <- floor((cl_BMI_data$marker_block[f_index,1]/500)*20) # Resample to 20 Hz - Index for Overall_spatial_chan_avg
+            feature_index <- floor((adj_marker_block_time_stamps[f_index]/500)*20) # Resample to 20 Hz - Index for all_feature_vectors
+            feature_index <- feature_index + 1 # Correction of 1 sample added after manually calculating the features (Dec 5,14)
+            
+            # Directly get features
             cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])            
+            # Segment the Overall Spatial Avg and use it to derive features
+            # ~~~Need to know window length for the subject, BNBO - 0.65s
+            opt_window_length <- 0.65
+            resamp_Fs <- 20
+            spatial_avg_epoch <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index - opt_window_length*resamp_Fs):spatial_avg_index]
+            epoch_time <- seq(from = -1*opt_window_length,to = 0,by = 1/resamp_Fs)
+            
+            cal_feature_vec <- t(c((spatial_avg_epoch[length(spatial_avg_epoch)] - spatial_avg_epoch[1])/(epoch_time[length(epoch_time)] - epoch_time[1]),
+              min(spatial_avg_epoch),
+              trapz(epoch_time,spatial_avg_epoch),
+              0))
+            
+            #cat("Cal: ",cal_feature_vec,"\t","Meas: ", toString(cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")]))
           }
           # Segment EEG signal during when Intent is detected
           # Write time stamp to .txt file
@@ -290,12 +311,32 @@ for (bc in seq_along(Block_num)){
 #      cat("Successful move attempts: ", sum(block_statistics$Successful_move_attempts), "\n")
       
       cl_session_stats <- rbind.data.frame(cl_session_stats,cl_trial_stats)
-}
-write.csv(x = cl_session_stats,
-          file = paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_statistics.csv"),collapse = ''))
+      block_ind <- which(cl_session_stats$Block_number == Block_num[bc])
+      
+      Total_num_of_trials <- c(Total_num_of_trials,length(which(cl_session_stats[block_ind,"Valid_or_catch"] == 1)))
+      Successful_trials <- c(Successful_trials,length(intersect(which(cl_session_stats[block_ind,"Valid_or_catch"] == 1), 
+                                            which(cl_session_stats[block_ind,"Intent_detected"] == 1))))
+      Catch_trials <- c(Catch_trials,length(which(cl_session_stats[block_ind,"Valid_or_catch"] == 2)))
+      Failed_Catch_trials <- c(Failed_Catch_trials,length(intersect(which(cl_session_stats[block_ind,"Valid_or_catch"] == 2), 
+                                                   which(cl_session_stats[block_ind,"Intent_detected"] == 1))))
 
+}
 cat("Block Numbers:       ", Block_num, "\n")
-#cat("Successful Trials:   ", Successful_trials, "\n")
-#cat("Total Num of trials: ", Total_num_of_trials, "\n")
-#cat("Num of Catch trials: ", Catch_trials, "\n")
+cat("Successful Trials:   ", Successful_trials, "\n")
+cat("Total Num of trials: ", Total_num_of_trials, "\n")
+cat("Failed Catch trials: ", Failed_Catch_trials, "\n")
+cat("Total Catch Trials:  ", Catch_trials,"\n")
+
+save_filename <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_statistics.csv"),collapse = '')
+fileConn <- file(save_filename)
+cat("Block Numbers,", toString(Block_num), "\n", #file = fileConn, sep = ',', append = T)
+    "Successful Trials,", toString(Successful_trials), "\n", 
+    "Total Num of trials,", toString(Total_num_of_trials), "\n",
+    "Failed Catch trials,", toString(Failed_Catch_trials), "\n",
+    "Total Catch Trials,", toString(Catch_trials),"\n\n",file = fileConn, sep = '', append = T)  
+close(fileConn)
+#fileConn <- file(save_filename)
+write.table(x = cl_session_stats,file = save_filename,append = T,col.names = T, sep = ',')
+#close(fileConn)
+
 
