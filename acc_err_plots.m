@@ -152,8 +152,9 @@ for subj_n = 1:1
             EEG_TPR = length(ind_eeg_success_valid_trials)/length(ind_valid_trials);
             EEG_FPR = length(ind_eeg_failed_catch_trials)/length(ind_catch_trials);
             
-            ind_eeg_emg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,9) == 1)); % col 9 - EEG+EMG decisions
-            ind_eeg_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,9) == 1));
+            % Correction: Use col 5 - Intent detected instead of col 9 - EEG+EMG decisions
+            ind_eeg_emg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); 
+            ind_eeg_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
             EEG_EMG_TPR = length(ind_eeg_emg_success_valid_trials)/length(ind_valid_trials);
             EEG_EMG_FPR = length(ind_eeg_emg_failed_catch_trials)/length(ind_catch_trials);
             
@@ -161,9 +162,9 @@ for subj_n = 1:1
                                 [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR...
                                  mean(Intent_per_min) std(Intent_per_min) block_duration_min]];
             patient_performance = [patient_performance;...
-                                   ses_n block_n mean(block_performance(:,7)) std(block_performance(:,7)) ... % col 7 - Number f move attempts
-                                   mean(block_performance(:,14)) std(block_performance(:,14)) sum(block_performance(:,14)) length(block_performance(:,14)) ]; % col 14 - Likert scale 
-            block_likert = [block_likert; block_performance(:,14)];
+                                   ses_n block_n mean(block_performance(:,7)) std(block_performance(:,7)) ... % col 7 - Number of move attempts
+                                   mean(block_performance(:,17)) std(block_performance(:,17)) sum(block_performance(:,17)) length(block_performance(:,17)) ]; % col 17 - Likert scale 
+            block_likert = [block_likert; block_performance(:,17)];
         end % ends block_n loop
         
         %    1      2        3         4        5       6         7           8             9                   10  
@@ -625,7 +626,7 @@ for subj_n = 1:1
         if ~exist(fileid,'file')
             continue
         end
-        cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',1,1); 
+        cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
         unique_blocks = unique(cl_ses_data(:,1));
         
 %%

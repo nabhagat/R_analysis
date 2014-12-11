@@ -70,10 +70,10 @@ directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 
 # Changes to be made
 Subject_name <- "BNBO"            #1 
-closeloop_Sess_num <- 4           #2
-closedloop_Block_num <- c(8)    #3
+closeloop_Sess_num <- 5           #2
+closedloop_Block_num <- c(2:9)      #3
 velocity_threshold <- 0.0267      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
-Cond_num  <- 1                    #5 1 - Backdrive, 3-Triggered modes
+Cond_num  <- 3                    #5 1 - Backdrive, 3-Triggered modes
 
 Training_Sess_num <- "2"
 Training_Block_num <- "160"
@@ -104,7 +104,9 @@ cl_session_stats <- data.frame(
                               MRCP_neg_peak = numeric(),
                               MRCP_AUC = numeric(),
                               MRCP_mahalanobis = numeric(),
-                              Overall_spatial_chan_avg_index = numeric(),
+                              feature_index = numeric(),
+                              Corrected_spatial_chan_avg_index = numeric(),
+                              Correction_applied_in_samples = numeric(),
                               Likert_score = numeric()
                               )
 
@@ -126,6 +128,8 @@ for (bc in seq_along(closedloop_Block_num)){
       block_likert <- type.convert(kin_header[!is.na(type.convert(kin_header,na.strings = c("Survey","Responses:")))])
       cl_BMI_data <- readMat(paste(c(directory,folderid,fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
       cl_BMI_data$marker_block[,1] <- as.double(cl_BMI_data$marker_block[,1]) # convert marker block in double precision
+      marker_block_index <- which(cl_BMI_data$marker_block[,2] == 300)        # Used to find feature_index
+      move_counts_index <- which(cl_BMI_data$move_counts == max(cl_BMI_data$all_cloop_cnts_threshold))  # Also used to find feature_index
       print(c("Working with block", toString(closedloop_Block_num[bc])))
       
       # Change column-names for kinematics data
@@ -174,7 +178,7 @@ for (bc in seq_along(closedloop_Block_num)){
       mycolors <- c("green","magenta","blue","green","black","green","red")
       #plot.ts(cl_kinematics_data[,c("Catch","Target_shown","Target_reached","Move_onset","Timeout")],plot.type = "single",col = mycolors, xy.labels = "")
       data_to_plot <- data.frame(filt_vel,vel_trigger_mod,cl_kinematics_data[,c("Target_shown","Target_reached","Move_onset","Timeout","Catch")])
-      plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,2))
+      #plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,2))
             
       # Remove Catch trials from Valid trials count i.e. correct for Catch Trials
       if (Subject_name == "JF"){
@@ -214,7 +218,9 @@ for (bc in seq_along(closedloop_Block_num)){
                               MRCP_neg_peak = numeric(length(all_stimulus_indices)),
                               MRCP_AUC = numeric(length(all_stimulus_indices)),
                               MRCP_mahalanobis = numeric(length(all_stimulus_indices)),
-                              Overall_spatial_chan_avg_index = numeric(length(all_stimulus_indices)),
+                              feature_index = numeric(length(all_stimulus_indices)),
+                              Corrected_spatial_chan_avg_index = numeric(length(all_stimulus_indices)),
+                              Correction_applied_in_samples = numeric(length(all_stimulus_indices)),
                               Likert_score = block_likert
       )
       
@@ -254,27 +260,39 @@ for (bc in seq_along(closedloop_Block_num)){
       #upsamp_Fs <- 500
       #upsampled_Overall_spatial_chan_avg <- resample(x = cl_BMI_data$Overall_spatial_chan_avg,p = upsamp_Fs,q = 20)
 
-      #cl_BMI_data$marker_block[,1] <- cl_BMI_data$marker_block[,1] - cl_BMI_data$marker_block[min(which(cl_BMI_data$marker_block[,2]==50)),1]
+      # marker_block is not accurate metric -- Use move_counts instead calculating features
       adj_marker_block_time_stamps <- cl_BMI_data$marker_block[,1] - cl_BMI_data$marker_block[min(which(cl_BMI_data$marker_block[,2]==50)),1]
       for (k in seq_along(adj_start_of_trial)){
           bmi_data_trial_interval <- intersect(which(adj_marker_block_time_stamps >= adj_start_of_trial[k]),
                     which(adj_marker_block_time_stamps < adj_end_of_trial[k]))
+          
           if (300 %in% cl_BMI_data$marker_block[bmi_data_trial_interval,2]){
             cl_trial_stats$EEG_decisions[k] <- 1
           }
+          
           if (400 %in% cl_BMI_data$marker_block[bmi_data_trial_interval,2]){
             cl_trial_stats$EEG_EMG_decisions[k] <- 1
+          }
+          
+          if (cl_trial_stats$Intent_detected[k]){
             # Copy feature vectors for EEG_GO only when EEG_EMG_GO occurs  
-            f_index <- bmi_data_trial_interval[max(which(cl_BMI_data$marker_block[bmi_data_trial_interval,2] == 300))]
-            #spatial_avg_index2 <- cl_BMI_data$marker_block[f_index,1]
-            # Correct way to resample is new_time_stamp = round((old_time_stamp/old_frequency)*new_frequency)
-            spatial_avg_index <- round((cl_BMI_data$marker_block[f_index,1]/500)*20) # Resample to 20 Hz - Index for Overall_spatial_chan_avg        
-            feature_index <- round((adj_marker_block_time_stamps[f_index]/500)*20) # Resample to 20 Hz - Index for all_feature_vectors
+            marker_block_300 <- bmi_data_trial_interval[max(which(cl_BMI_data$marker_block[bmi_data_trial_interval,2] == 300))]
+            feature_index <- move_counts_index[which(marker_block_index == marker_block_300)]   # Added Dec10,2014
+            
+            
+            ## No longer used - Dec10,2014
+            # Note: Correct way to resample is new_time_stamp = round((old_time_stamp/old_frequency)*new_frequency)
+            # f_index <- marker_block_300
+            #feature_index <- round((adj_marker_block_time_stamps[f_index]/500)*20) # Resample to 20 Hz - Index for all_feature_vectors
             #feature_index <- feature_index + 2 # Incorrect - Correction of 5 sample added after manually calculating the features (Dec 5,14)
+            #spatial_avg_index <- round((cl_BMI_data$marker_block[f_index,1]/500)*20) # Resample to 20 Hz - Index for Overall_spatial_chan_avg        
             
             # Directly get classification features - (Dec9,2014) No longer used because of imprecision in sample number. Instead used Overall_spatial_chan_avg
-            # cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])            
+            cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])            
+            
             # Segment the Overall Spatial Avg and use it to derive features
+            spatial_avg_sample_correction <- round(((cl_BMI_data$marker_block[which(cl_BMI_data$marker_block[,2]==50)[1],1] - cl_BMI_data$marker_block[1,1])/500)*20)
+            spatial_avg_index <- feature_index + spatial_avg_sample_correction
             spatial_avg_epoch <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index - Classifier$smart_window_length*resamp_Fs):spatial_avg_index]
             epoch_time <- seq(from = -1*Classifier$smart_window_length,to = 0,by = 1/resamp_Fs)
             
@@ -283,11 +301,30 @@ for (bc in seq_along(closedloop_Block_num)){
               trapz(epoch_time,spatial_avg_epoch),
               sqrt((spatial_avg_epoch - Classifier$smart_Mu_move)%*%(inv(Classifier$smart_Cov_Mat))%*%(t(spatial_avg_epoch - Classifier$smart_Mu_move)))
               ))
+                       
+            #cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- cal_feature_vec
+            # Calculating correction for Overall_spatial_chan_avg
+            intersection_index <- intersect(
+              intersect(which(round(cl_BMI_data$all_feature_vectors[1,],5) %in% round(cal_feature_vec[1],5)),
+                        which(round(cl_BMI_data$all_feature_vectors[2,],5) %in% round(cal_feature_vec[2],5))),
+              intersect(which(round(cl_BMI_data$all_feature_vectors[3,],5) %in% round(cal_feature_vec[3],5)),
+                        which(round(cl_BMI_data$all_feature_vectors[4,],5) %in% round(cal_feature_vec[4],5)))
+            )
+            correction_for_spatial_avg_index <- intersection_index - feature_index
+            spatial_avg_index <- spatial_avg_index - correction_for_spatial_avg_index
             
-            cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- cal_feature_vec
+            spatial_avg_epoch <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index - Classifier$smart_window_length*resamp_Fs):spatial_avg_index]
+            epoch_time <- seq(from = -1*Classifier$smart_window_length,to = 0,by = 1/resamp_Fs)
             
-            #cat("Cal: ",cal_feature_vec,"\t","Meas: ", toString(t(cl_BMI_data$all_feature_vectors[,feature_index])), "\n")
-                        
+            cal_feature_vec <- t(c((spatial_avg_epoch[length(spatial_avg_epoch)] - spatial_avg_epoch[1])/(epoch_time[length(epoch_time)] - epoch_time[1]),
+                                   min(spatial_avg_epoch),
+                                   trapz(epoch_time,spatial_avg_epoch),
+                                   sqrt((spatial_avg_epoch - Classifier$smart_Mu_move)%*%(inv(Classifier$smart_Cov_Mat))%*%(t(spatial_avg_epoch - Classifier$smart_Mu_move)))
+            ))
+            
+            cat("Cal: ",cal_feature_vec,"\t","Meas: ", toString(t(cl_BMI_data$all_feature_vectors[,feature_index])),"\t",
+                "spatial_index: ", toString(spatial_avg_index), "\n")
+                      
             # Segment processed_eeg and Overall_spatial_avg arrays according to the instant when intent was detected
             # Segment duration = [-2.5s to +1s] w.r.t instant when intent is detected
             Intent_EEG_epochs_trial <- array(data = NA, 
@@ -312,7 +349,9 @@ for (bc in seq_along(closedloop_Block_num)){
             # Append (bind) array to global array
             Intent_EEG_epochs_session <- abind(Intent_EEG_epochs_session,Intent_EEG_epochs_trial,along = 3)
             
-            cl_trial_stats$Overall_spatial_chan_avg_index[k] <- feature_index #spatial_avg_index # Write time stamp to .csv file
+            cl_trial_stats$feature_index[k] <- feature_index
+            cl_trial_stats$Corrected_spatial_chan_avg_index[k] <- spatial_avg_index # Write time stamp to .csv file
+            cl_trial_stats$Correction_applied_in_samples[k] <- correction_for_spatial_avg_index
           }
           else{
             Intent_EEG_epochs_trial <- array(0, 
@@ -320,7 +359,9 @@ for (bc in seq_along(closedloop_Block_num)){
                                                      (epoch_end_time-epoch_start_time)*resamp_Fs+1,
                                                      1))
             Intent_EEG_epochs_session <- abind(Intent_EEG_epochs_session,Intent_EEG_epochs_trial,along = 3)
-            cl_trial_stats$Overall_spatial_chan_avg_index[k] <- 0
+            cl_trial_stats$Corrected_spatial_chan_avg_index[k] <- 0
+            cl_trial_stats$Correction_applied_in_samples[k] <- 0
+            cl_trial_stats$feature_index[k] <- 0
           }
           
       }
@@ -390,7 +431,9 @@ cat("Successful Trials:   ", Successful_trials, "\n")
 cat("Total Num of trials: ", Total_num_of_trials, "\n")
 cat("Failed Catch trials: ", Failed_Catch_trials, "\n")
 cat("Total Catch Trials:  ", Catch_trials,"\n")
-cat("Are EEG_EMG_decisions and Intent_detected identifical? ",identical(cl_session_stats$Intent_detected,cl_session_stats$EEG_EMG_decisions))
+cat("Are EEG_EMG_decisions and Intent_detected identifical? ", 
+    identical(cl_session_stats$Intent_detected,cl_session_stats$EEG_EMG_decisions), "  ",
+    which(cl_session_stats$Intent_detected != cl_session_stats$EEG_EMG_decisions))
 
 save_filename <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_statistics.csv"),collapse = '')
 fileConn <- file(save_filename)
@@ -406,4 +449,8 @@ write.table(x = cl_session_stats,file = save_filename,append = T,col.names = T, 
 
 save_matfile <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_eeg_epochs.mat"),collapse = '')
 writeMat(save_matfile,Intent_EEG_epochs_session = Intent_EEG_epochs_session, append = FALSE)
+
+
+
+
 
