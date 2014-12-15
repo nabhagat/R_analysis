@@ -69,10 +69,10 @@ find_next_response_index <- function(response_trigs,catch_trigs){
 directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 
 # Changes to be made
-Subject_name <- "BNBO"            #1 
+Subject_name <- "JF"            #1 
 closeloop_Sess_num <- 5           #2
-closedloop_Block_num <- c(2:9)      #3
-velocity_threshold <- 0.0267      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
+closedloop_Block_num <- c(6:9)      #3
+velocity_threshold <- 0.0232      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
 Cond_num  <- 3                    #5 1 - Backdrive, 3-Triggered modes
 
 Training_Sess_num <- "2"
@@ -129,7 +129,9 @@ for (bc in seq_along(closedloop_Block_num)){
       cl_BMI_data <- readMat(paste(c(directory,folderid,fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
       cl_BMI_data$marker_block[,1] <- as.double(cl_BMI_data$marker_block[,1]) # convert marker block in double precision
       marker_block_index <- which(cl_BMI_data$marker_block[,2] == 300)        # Used to find feature_index
-      move_counts_index <- which(cl_BMI_data$move_counts == max(cl_BMI_data$all_cloop_cnts_threshold))  # Also used to find feature_index
+      #move_counts_index <- which(cl_BMI_data$move_counts == max(cl_BMI_data$all_cloop_cnts_threshold))  # Also used to find feature_index
+      # Correction for calculating move_counts_index
+      move_counts_index <- which((cl_BMI_data$all_cloop_cnts_threshold - cl_BMI_data$move_counts) <= 0)
       print(c("Working with block", toString(closedloop_Block_num[bc])))
       
       # Change column-names for kinematics data
@@ -247,8 +249,8 @@ for (bc in seq_along(closedloop_Block_num)){
           length(which(vel_trigger_mod[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]] == 1))
       }
 
-      adj_start_of_trial <- floor(cl_trial_stats$Start_of_trial/2)    # Downsample to 500 Hz
-      adj_end_of_trial <- floor(cl_trial_stats$End_of_trial/2)
+      adj_start_of_trial <- round(cl_trial_stats$Start_of_trial/2) -  250   # Downsample to 500 Hz
+      adj_end_of_trial <- round(cl_trial_stats$End_of_trial/2) + 250
 
       # Determine values of features when Intent was detected i.e. last EEG_GO decision(marker 300)
       # We have all EEG_GO decision available - use move_counts 
@@ -266,6 +268,21 @@ for (bc in seq_along(closedloop_Block_num)){
           bmi_data_trial_interval <- intersect(which(adj_marker_block_time_stamps >= adj_start_of_trial[k]),
                     which(adj_marker_block_time_stamps < adj_end_of_trial[k]))
           
+          if (length(bmi_data_trial_interval) == 0){
+            
+            cat("BMI data interval not found!!\n")
+            Intent_EEG_epochs_trial <- array(0, 
+                                             dim = c(dim(cl_BMI_data$processed_eeg)[1]+2,
+                                                     (epoch_end_time-epoch_start_time)*resamp_Fs+1,
+                                                     1))
+            Intent_EEG_epochs_session <- abind(Intent_EEG_epochs_session,Intent_EEG_epochs_trial,along = 3)
+            cl_trial_stats$Corrected_spatial_chan_avg_index[k] <- 0
+            cl_trial_stats$Correction_applied_in_samples[k] <- 0
+            cl_trial_stats$feature_index[k] <- 0
+            next
+          }
+            
+            
           if (300 %in% cl_BMI_data$marker_block[bmi_data_trial_interval,2]){
             cl_trial_stats$EEG_decisions[k] <- 1
           }
@@ -275,8 +292,16 @@ for (bc in seq_along(closedloop_Block_num)){
           }
           
           if (cl_trial_stats$Intent_detected[k]){
-            # Copy feature vectors for EEG_GO only when EEG_EMG_GO occurs  
-            marker_block_300 <- bmi_data_trial_interval[max(which(cl_BMI_data$marker_block[bmi_data_trial_interval,2] == 300))]
+            # Copy feature vectors for EEG_GO only when EEG_EMG_GO occurs
+            ind300 <- which(cl_BMI_data$marker_block[bmi_data_trial_interval,2] == 300)
+            if (length(ind300) == 0){
+              ind300 <- which(cl_BMI_data$marker_block[bmi_data_trial_interval-1,2] == 300)
+              marker_block_300 <- bmi_data_trial_interval[max(ind300)]-1
+            }
+            else{
+              marker_block_300 <- bmi_data_trial_interval[max(ind300)]              
+            }
+            
             feature_index <- move_counts_index[which(marker_block_index == marker_block_300)]   # Added Dec10,2014
             
             
@@ -304,54 +329,71 @@ for (bc in seq_along(closedloop_Block_num)){
                        
             #cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- cal_feature_vec
             # Calculating correction for Overall_spatial_chan_avg
-            intersection_index <- intersect(
-              intersect(which(round(cl_BMI_data$all_feature_vectors[1,],5) %in% round(cal_feature_vec[1],5)),
-                        which(round(cl_BMI_data$all_feature_vectors[2,],5) %in% round(cal_feature_vec[2],5))),
-              intersect(which(round(cl_BMI_data$all_feature_vectors[3,],5) %in% round(cal_feature_vec[3],5)),
-                        which(round(cl_BMI_data$all_feature_vectors[4,],5) %in% round(cal_feature_vec[4],5)))
-            )
-            correction_for_spatial_avg_index <- intersection_index - feature_index
-            spatial_avg_index <- spatial_avg_index - correction_for_spatial_avg_index
+            intersection_index <- 
+              intersect(
+                intersect(which(round(cl_BMI_data$all_feature_vectors[1,],4) %in% round(cal_feature_vec[1],4)),
+                          which(round(cl_BMI_data$all_feature_vectors[2,],4) %in% round(cal_feature_vec[2],4))),
+                intersect(which(round(cl_BMI_data$all_feature_vectors[3,],4) %in% round(cal_feature_vec[3],4)),
+                          which(round(cl_BMI_data$all_feature_vectors[4,],4) %in% round(cal_feature_vec[4],4))))
             
-            spatial_avg_epoch <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index - Classifier$smart_window_length*resamp_Fs):spatial_avg_index]
-            epoch_time <- seq(from = -1*Classifier$smart_window_length,to = 0,by = 1/resamp_Fs)
+                if (length(intersection_index) != 0){
+                  
+                  correction_for_spatial_avg_index <- intersection_index - feature_index
+                  spatial_avg_index <- spatial_avg_index - correction_for_spatial_avg_index
+                  
+                  spatial_avg_epoch <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index - Classifier$smart_window_length*resamp_Fs):spatial_avg_index]
+                  epoch_time <- seq(from = -1*Classifier$smart_window_length,to = 0,by = 1/resamp_Fs)
+                  
+                  cal_feature_vec <- t(c((spatial_avg_epoch[length(spatial_avg_epoch)] - spatial_avg_epoch[1])/(epoch_time[length(epoch_time)] - epoch_time[1]),
+                                         min(spatial_avg_epoch),
+                                         trapz(epoch_time,spatial_avg_epoch),
+                                         sqrt((spatial_avg_epoch - Classifier$smart_Mu_move)%*%(inv(Classifier$smart_Cov_Mat))%*%(t(spatial_avg_epoch - Classifier$smart_Mu_move)))
+                  ))
+                  
+                  cat("Cal: ",cal_feature_vec,"\t","Meas: ", toString(t(cl_BMI_data$all_feature_vectors[,feature_index])),"\t",
+                      "spatial_index: ", toString(spatial_avg_index), "\n")
+                            
+                  # Segment processed_eeg and Overall_spatial_avg arrays according to the instant when intent was detected
+                  # Segment duration = [-2.5s to +1s] w.r.t instant when intent is detected
+                  Intent_EEG_epochs_trial <- array(data = NA, 
+                                                   dim = c(length(Classifier$channels)+2,
+                                                           (epoch_end_time-epoch_start_time)*resamp_Fs+1,
+                                                           1))
+                  Intent_EEG_epochs_trial[1,,1] <- seq(from = epoch_start_time,to = epoch_end_time,by = 1/resamp_Fs)
+                  Intent_EEG_epochs_trial[2,,1] <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index + epoch_start_time*resamp_Fs):
+                                                                                          (spatial_avg_index + epoch_end_time*resamp_Fs)]
+                              
+                  Intent_EEG_epochs_trial[3:dim(Intent_EEG_epochs_trial)[1],,1] <- 
+                    cl_BMI_data$processed_eeg[,(spatial_avg_index + epoch_start_time*resamp_Fs):
+                                                (spatial_avg_index + epoch_end_time*resamp_Fs)]
+                  
+                  # Add row names
+                  rownames(Intent_EEG_epochs_trial) <- c(list("time","Spatial_Avg"),as.list(Classifier$channels))
+                  
+                  # To check if processed EEG channels and Spatial Avg match
+                  # plot(Intent_EEG_epochs_trial[1,,],Intent_EEG_epochs_trial[2,,])
+                  # lines(Intent_EEG_epochs_trial[1,,],colMeans(Intent_EEG_epochs_trial[3:6,,1]),col="red")
+                  
+                  # Append (bind) array to global array
+                  Intent_EEG_epochs_session <- abind(Intent_EEG_epochs_session,Intent_EEG_epochs_trial,along = 3)
+                  
+                  cl_trial_stats$feature_index[k] <- feature_index
+                  cl_trial_stats$Corrected_spatial_chan_avg_index[k] <- spatial_avg_index # Write time stamp to .csv file
+                  cl_trial_stats$Correction_applied_in_samples[k] <- correction_for_spatial_avg_index
+                }
+                else{
+                  # Note: intersection_index is NULL then correction to spatial_chan_avg_index is 0
+                  cat("Feature vector intersection not found!!\n")
+                  Intent_EEG_epochs_trial <- array(0, 
+                                                   dim = c(dim(cl_BMI_data$processed_eeg)[1]+2,
+                                                           (epoch_end_time-epoch_start_time)*resamp_Fs+1,
+                                                           1))
+                  Intent_EEG_epochs_session <- abind(Intent_EEG_epochs_session,Intent_EEG_epochs_trial,along = 3)
+                  cl_trial_stats$Corrected_spatial_chan_avg_index[k] <- 0
+                  cl_trial_stats$Correction_applied_in_samples[k] <- 0
+                  cl_trial_stats$feature_index[k] <- feature_index
+                }
             
-            cal_feature_vec <- t(c((spatial_avg_epoch[length(spatial_avg_epoch)] - spatial_avg_epoch[1])/(epoch_time[length(epoch_time)] - epoch_time[1]),
-                                   min(spatial_avg_epoch),
-                                   trapz(epoch_time,spatial_avg_epoch),
-                                   sqrt((spatial_avg_epoch - Classifier$smart_Mu_move)%*%(inv(Classifier$smart_Cov_Mat))%*%(t(spatial_avg_epoch - Classifier$smart_Mu_move)))
-            ))
-            
-            cat("Cal: ",cal_feature_vec,"\t","Meas: ", toString(t(cl_BMI_data$all_feature_vectors[,feature_index])),"\t",
-                "spatial_index: ", toString(spatial_avg_index), "\n")
-                      
-            # Segment processed_eeg and Overall_spatial_avg arrays according to the instant when intent was detected
-            # Segment duration = [-2.5s to +1s] w.r.t instant when intent is detected
-            Intent_EEG_epochs_trial <- array(data = NA, 
-                                             dim = c(length(Classifier$channels)+2,
-                                                     (epoch_end_time-epoch_start_time)*resamp_Fs+1,
-                                                     1))
-            Intent_EEG_epochs_trial[1,,1] <- seq(from = epoch_start_time,to = epoch_end_time,by = 1/resamp_Fs)
-            Intent_EEG_epochs_trial[2,,1] <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index + epoch_start_time*resamp_Fs):
-                                                                                    (spatial_avg_index + epoch_end_time*resamp_Fs)]
-                        
-            Intent_EEG_epochs_trial[3:dim(Intent_EEG_epochs_trial)[1],,1] <- 
-              cl_BMI_data$processed_eeg[,(spatial_avg_index + epoch_start_time*resamp_Fs):
-                                          (spatial_avg_index + epoch_end_time*resamp_Fs)]
-            
-            # Add row names
-            rownames(Intent_EEG_epochs_trial) <- c(list("time","Spatial_Avg"),as.list(Classifier$channels))
-            
-            # To check if processed EEG channels and Spatial Avg match
-            # plot(Intent_EEG_epochs_trial[1,,],Intent_EEG_epochs_trial[2,,])
-            # lines(Intent_EEG_epochs_trial[1,,],colMeans(Intent_EEG_epochs_trial[3:6,,1]),col="red")
-            
-            # Append (bind) array to global array
-            Intent_EEG_epochs_session <- abind(Intent_EEG_epochs_session,Intent_EEG_epochs_trial,along = 3)
-            
-            cl_trial_stats$feature_index[k] <- feature_index
-            cl_trial_stats$Corrected_spatial_chan_avg_index[k] <- spatial_avg_index # Write time stamp to .csv file
-            cl_trial_stats$Correction_applied_in_samples[k] <- correction_for_spatial_avg_index
           }
           else{
             Intent_EEG_epochs_trial <- array(0, 
