@@ -1,6 +1,6 @@
 BMI_MAHI_MATLAB_files
 =====================
-Last updateto README.md: 12-29-2014
+Last update to README.md: 12-29-2014
 
 This folder contains Matlab and R program files for analyzing data for TNSRE paper
 
