@@ -4,16 +4,16 @@
 % Date: December 16, 2014
 %------------------------------------------------------------------------------------------------------------------------
 % Revisions
-
+% 02/20/15 - Resolved bugs in writing catch trials to event markers file
+%                    - For LSGR_ses4, block 1 is skipped because missing
+%                    Start_of_Experiment (S10) marker
 %------------------------------------------------------------------------------------------------------------------------
 clear;
 eeglab; % Start EEGLAB
 % Subject Details
-Subject_name = 'LSGR';
-closeloop_Sess_num = 5;
-folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_name '\' Subject_name '_Session' num2str(closeloop_Sess_num) '\']; % change2
-% BNBO_ses4 = [25 25]; BNBO_ses5 = [31 21]; 
-% PLSH_ses4 = [13 9]; 
+Subject_name = 'BNBO';      %change1
+closeloop_Sess_num = 5;     %change2
+folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_name '\' Subject_name '_Session' num2str(closeloop_Sess_num) '\']; % change3
 
 %ERWS_ses4
 %biceps_threshold = 50*ones(1,8);                  
@@ -23,9 +23,14 @@ folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_nam
 %biceps_threshold = 35*ones(1,5);                  
 %triceps_threshold = 10*ones(1,5);
 
+% %BNBO_ses4
+%biceps_threshold = 25*ones(1,8);                  
+%triceps_threshold = 25*ones(1,8);
+
 % %BNBO_ses5
-% biceps_threshold = 31*ones(1,8);                  
-% triceps_threshold = 21*ones(1,8);
+ biceps_threshold = 31*ones(1,8);                  
+ triceps_threshold = 21*ones(1,8);
+
 
 %PLSH_ses4
 %biceps_threshold = [9 9 13 13 13 13 13 13];                  
@@ -35,16 +40,16 @@ folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_nam
 %biceps_threshold = [9 10 10 7 6 6 6 6];                  
 %triceps_threshold = [5.5 7.5 7 7 6 6 6 6];
 
-% %LSGR_ses4
-% biceps_threshold = [11 11 11 7 8 8 8 8];                  
-% triceps_threshold = [6 6 8 8 6.5 6.5 6.5 6.5];
+% %LSGR_ses4                                                    %change4
+%biceps_threshold = [11 11 11 7 8 8 8 8];                  
+%triceps_threshold = [6 6 8 8 6.5 6.5 6.5 6.5];
 
 %LSGR_ses5
-biceps_threshold = [8 8 8 10 8 8 8 8 8];                  
-triceps_threshold = [6.5 6.5 6.5 8 7.2 7.2 7.2 7.2 7.2];
+%biceps_threshold = [8 8 8 10 8 8 8 8 8];                  
+%triceps_threshold = [6.5 6.5 6.5 8 7.2 7.2 7.2 7.2 7.2];
 
 % Flags for selecting parts of code
-import_event_markers_into_eeglab = 1;
+import_event_markers_into_eeglab = 1; % must select estimate_eeg_emg_delays; both are dependent
 estimate_eeg_emg_delays = 1;
 
 % Fixed variables
@@ -68,7 +73,7 @@ EEGLAB_dataset_to_merge = [];
 for m = 1:length(unique_blocks)
     if (strcmp(Subject_name,'LSGR') && (closeloop_Sess_num == 4)) 
         if (m == 1) || (m==3) || (m==4)           % LSGR_ses4
-            continue
+            %continue
         end
     end
     closeloop_Block_num = unique_blocks(m);
@@ -363,21 +368,22 @@ for m = 1:length(unique_blocks)
             '_block' num2str(closeloop_Block_num) '_event_markers.txt'],'w');
 
         for i = 1:length(ind_move_onset)
-            fprintf(marker_file_id,'EEG-GO \t %d \n',marker_block(accurate_ind_EEG_Go(i),1));                         % Not-Accurate - To be replaced 
-            fprintf(marker_file_id,'EMG-GO \t %d \n',marker_block(ind_EEG_EMG_Go(i),1));            % Not-Accurate - To be replaced
+            fprintf(marker_file_id,'EEG-GO-%d \t %d \n',m,marker_block(accurate_ind_EEG_Go(i),1));                         % Not-Accurate - To be replaced 
+            fprintf(marker_file_id,'EMG-GO-%d \t %d \n',m,marker_block(ind_EEG_EMG_Go(i),1));            % Not-Accurate - To be replaced
             %fprintf(marker_file_id,'EEG-GO \t %6.3f \n',eeg_detected_times(i)); % More accurate, times occur after move_onset
             %fprintf(marker_file_id,'EMG-GO \t %6.3f \n',emg_detected_times(i)); % More accurate, times occur after move_onset
-            fprintf(marker_file_id,'Move-Onset \t %d \n',marker_block(ind_move_onset(i),1));         % Accurate
+            fprintf(marker_file_id,'Move-Onset-%d \t %d \n',m,marker_block(ind_move_onset(i),1));         % Accurate
             fprintf(marker_file_id,'Target-Hit \t %d \n',target_reached(i));                                               % Accurate      
         end
 
-        for i = 1:length(ind_move_onset_catch)
+        catch_indexes =  accurate_ind_EEG_Go(Intents_labels == 2);
+        for i = 1:length(ind_move_onset_catch) % Bug found - multiple line prints
             %fprintf(marker_file_id,'catch-EEG-GO \t %d \n',marker_block(ind_EEG_Go_catch(i),1));                         % Not-Accurate - To be replaced 
-            fprintf(marker_file_id,'catch-EEG-GO \t %d \n',marker_block(accurate_ind_EEG_Go(Intents_labels == 2),1));                          
-            fprintf(marker_file_id,'catch-EMG-GO \t %d \n',marker_block(ind_EEG_EMG_Go_catch(i),1));            
+            fprintf(marker_file_id,'catch-EEG-GO-%d \t %d \n',m,marker_block(catch_indexes(i),1));                          
+            fprintf(marker_file_id,'catch-EMG-GO-%d \t %d \n',m,marker_block(ind_EEG_EMG_Go_catch(i),1));            
             %fprintf(marker_file_id,'catch-EEG-GO \t %6.3f \n',catch_eeg_detected_times(i));               % More accurate
             %fprintf(marker_file_id,'catch-EMG-GO \t %6.3f \n',catch_emg_detected_times(i));            % More accurate
-            fprintf(marker_file_id,'catch-Move-Onset \t %d \n',marker_block(ind_move_onset_catch(i),1));         % Accurate
+            fprintf(marker_file_id,'catch-Move-Onset-%d \t %d \n',m,marker_block(ind_move_onset_catch(i),1));         % Accurate
             fprintf(marker_file_id,'catch-Target-Hit \t %d \n',target_reached_catch(i));                                                % Accurate
         end
 
@@ -415,7 +421,7 @@ if ~isempty(EEGLAB_dataset_to_merge)
     [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG);
     eeglab redraw;
 
-    EEG = pop_saveset( EEG, 'filename',[Subject_name '_ses' num2str(closeloop_Sess_num) '_closeloop_all_blocks_eeg_raw.set'],...
+    EEG = pop_saveset( EEG, 'filename',[Subject_name '_ses' num2str(closeloop_Sess_num) '_closeloop_all_blocks_eeg_raw_modified.set'],...
    'filepath',folder_path);
     EEG = eeg_checkset( EEG );
 end

@@ -4,6 +4,7 @@ mycolors_square = {'-rs','-bs','-ks','-gs','-bs'};
 mycolors_circle = {'-ro','-bo','-ko','-go','-bo'};
 myfacecolors = ['r','b','k','g','b'];
 posterFontSize = 10;
+paper_font_size = 10;
 %load('acc_per_session.mat');
 %load('err_per_session.mat');
 % acc_per_session = [acc_per_session(1:2,:); acc_per_session(5,:); acc_per_session(3:4,:)]
@@ -16,12 +17,20 @@ max_ses4 = 8;
 max_ses5 = 9;
 Subject_names = {'LSGR','PLSH','ERWS','BNBO'};
 Sess_nums = 4:5;
-maxY_ranges = [90 30 55 40];
+maxY_ranges = [90 30 65 45];
+features_names = {'Slope','-ve Peak', 'Area', 'Mahalanobis'};
 
 plot_intent_fpr_min = 0;
 plot_num_attempts = 0;
 plot_different_metrics = 0;
-plot_intent_only = 1;
+plot_intent_only = 0;
+plot_CoV = 0;
+plot_tpr_fpr_comparison_old = 0;
+plot_tpr_fpr_comparison_new = 0;
+plot_performance_day4_day5 = 0;
+compare_closed_loop_features = 1;
+plot_with_likert =  1;
+
 %%
 % figure();
 % T_plot = tight_subplot(1,2,[0.15],[0.2 0.15],[0.15 0.15]);
@@ -971,170 +980,6 @@ if plot_num_attempts == 1
             % saveas(gca,'All_subjects_block_accuracy_bw.fig')
 end
 
-%% Plotting features vs Intents/min
-% % 
-% % for subj_n = 1:1               
-% %                 for n = 1:length(Sess_nums)
-% %                     ses_n = Sess_nums(n);
-% %                     folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
-% %                     fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
-% %                     if ~exist(fileid,'file')
-% %                         continue
-% %                     end
-% %                     cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
-% %                     Ses_success_trials = find((cl_ses_data(:,4) == 1) & (cl_ses_data(:,5) == 1)); % col 5 - Intent detected,                
-% %                     Ses_Intent_per_min = 60./cl_ses_data(Ses_success_trials,6);
-% %                     Ses_features = cl_ses_data(Ses_success_trials,10:13);
-% %     
-% %                     [sorted_Ses_Intent, sort_order] = sort(Ses_Intent_per_min);
-% %                     sorted_Ses_features = Ses_features(sort_order,:);
-% %                    %sorted_Ses_Intent = Ses_Intent_per_min;
-% %                    %sorted_Ses_features = Ses_features;
-% %                     
-% %                     figure('Position',[0 50 12*116 4*116]);
-% %                     T_plot = tight_subplot(2,4,[0.15 0.1],[0.1],[0.1]);
-% %                     
-% %                     axes(T_plot(1));
-% %                     plot(sorted_Ses_features(:,1), sorted_Ses_Intent,'or','MarkerSize',6,'LineWidth',2);
-% %                     ylabel({'Motor Intents per min'},'FontSize',posterFontSize);
-% %                     %xlabel('Slope','FontSize',posterFontSize);
-% %                     ylim([0 40]);
-% %                     xlim([-15 5]);
-% %                     
-% %                     axes(T_plot(2));
-% %                     plot(sorted_Ses_features(:,2), sorted_Ses_Intent,'og','MarkerSize',6,'LineWidth',2);
-% %                     %ylabel('Motor Intents per min','FontSize',posterFontSize);
-% %                     %xlabel('-ve Peak','FontSize',posterFontSize);
-% %                     set(gca,'YTickLabel',[]);
-% %                     ylim([0 40]);
-% %                     xlim([-15 5]);
-% %                     
-% %                     axes(T_plot(3));
-% %                     plot(sorted_Ses_features(:,3), sorted_Ses_Intent,'ob','MarkerSize',6,'LineWidth',2);
-% %                     %ylabel('Motor Intents per min','FontSize',posterFontSize);
-% %                     %xlabel('AUC','FontSize',posterFontSize);
-% %                     set(gca,'YTickLabel',[]);
-% %                     ylim([0 40]);
-% %                     xlim([-15 5]);
-% %                     
-% %                     axes(T_plot(4));
-% %                     plot(sorted_Ses_features(:,4), sorted_Ses_Intent,'ok','MarkerSize',6,'LineWidth',2);
-% %                     %ylabel('Motor Intents per min','FontSize',posterFontSize);
-% %                     %xlabel('Mahalanobis','FontSize',posterFontSize);
-% %                     set(gca,'YTickLabel',[]);
-% %                     ylim([0 40]);
-% %                     xlim([0 10]);
-% %                     
-% %                     axes(T_plot(5));
-% %                     hist(sorted_Ses_features(:,1),10);
-% %                     h1 = findobj(gca,'Type','patch');
-% %                     title('Slope','FontSize',14);
-% %                     set(h1,'FaceColor','w','EdgeColor','r','LineWidth',2);
-% %                     xlim([-15 5]);
-% %                     
-% % 
-% %                     axes(T_plot(6));
-% %                     hist(sorted_Ses_features(:,2),10);
-% %                     h1 = findobj(gca,'Type','patch');
-% %                     title('-ve Peak','FontSize',14);
-% %                     set(h1,'FaceColor','w','EdgeColor','g','LineWidth',2);
-% %                     xlim([-15 5]);
-% %                     
-% %                     axes(T_plot(7));
-% %                     hist(sorted_Ses_features(:,3),10);
-% %                     h1 = findobj(gca,'Type','patch');
-% %                     title('AUC','FontSize',14);
-% %                     set(h1,'FaceColor','w','EdgeColor','b','LineWidth',2);
-% %                     xlim([-15 5]);
-% %                     
-% %                     axes(T_plot(8));
-% %                     hist(sorted_Ses_features(:,4),10);
-% %                     h1 = findobj(gca,'Type','patch');
-% %                     title('Mahalanobis','FontSize',14);
-% %                     set(h1,'FaceColor','w','EdgeColor','k','LineWidth',2);
-% %                     xlim([0 10]);
-% %                     
-% %                     mtit([Subject_names{subj_n} ', Day ' num2str(ses_n)],'fontsize',14,'yoff',0.025);
-% % %%                    
-% % %                     axes(T_plot(5));
-% % %                     plot3(sorted_Ses_features(:,1), sorted_Ses_features(:,2), sorted_Ses_Intent,'-r','MarkerSize',6, 'MarkerFaceColor', 'w');
-% % %                     zlabel({'Motor Intents per min'},'FontSize',posterFontSize);
-% % %                     xlabel('Slope','FontSize',posterFontSize);
-% % %                     ylabel('-ve Peak','FontSize',posterFontSize);
-% % %                     zlim([0 40]);
-% % %                     grid on;
-% % %                     
-% % %                     axes(T_plot(6));
-% % %                     plot3(sorted_Ses_features(:,1), sorted_Ses_features(:,3), sorted_Ses_Intent,'-r','MarkerSize',6, 'MarkerFaceColor', 'w');
-% % %                     %zlabel({'Motor Intents per min';'sorted'},'FontSize',posterFontSize);
-% % %                     xlabel('Slope','FontSize',posterFontSize);
-% % %                     ylabel('AUC','FontSize',posterFontSize);
-% % %                     zlim([0 40]);
-% % %                     grid on;
-% % %                     
-% % %                     axes(T_plot(7));
-% % %                     plot3(sorted_Ses_features(:,1), sorted_Ses_features(:,4), sorted_Ses_Intent,'-r','MarkerSize',6, 'MarkerFaceColor', 'w');
-% % %                     %zlabel({'Motor Intents per min';'sorted'},'FontSize',posterFontSize);
-% % %                     xlabel('Slope','FontSize',posterFontSize);
-% % %                     ylabel('Mahalanobis','FontSize',posterFontSize);
-% % %                     zlim([0 40]);
-% % %                     grid on;
-% % %                     
-% % %                     axes(T_plot(9));
-% % %                     plot3(sorted_Ses_features(:,4), sorted_Ses_features(:,2), sorted_Ses_Intent,'-k','MarkerSize',6, 'MarkerFaceColor', 'w');
-% % %                     zlabel({'Motor Intents per min'},'FontSize',posterFontSize);
-% % %                     xlabel('Mahalanobis','FontSize',posterFontSize);
-% % %                     ylabel('-ve Peak','FontSize',posterFontSize);
-% % %                     zlim([0 40]);
-% % %                     grid on;
-% % %                     
-% % %                     axes(T_plot(10));
-% % %                     plot3(sorted_Ses_features(:,4), sorted_Ses_features(:,3), sorted_Ses_Intent,'-k','MarkerSize',6, 'MarkerFaceColor', 'w');
-% % %                     %zlabel({'Motor Intents per min';'sorted'},'FontSize',posterFontSize);
-% % %                     xlabel('Mahalanobis','FontSize',posterFontSize);
-% % %                     ylabel('AUC','FontSize',posterFontSize);
-% % %                     zlim([0 40]);
-% % %                     grid on;
-% % %                     
-% % %                     axes(T_plot(11));
-% % %                     plot3(sorted_Ses_features(:,3), sorted_Ses_features(:,2), sorted_Ses_Intent,'-b','MarkerSize',6, 'MarkerFaceColor', 'w');
-% % %                     %zlabel({'Motor Intents per min';'sorted'},'FontSize',posterFontSize);
-% % %                     xlabel('AUC','FontSize',posterFontSize);
-% % %                     ylabel('-ve Peak','FontSize',posterFontSize);
-% % %                     zlim([0 40]);
-% % %                     grid on;
-% %                     
-% %                     %%  Histograms for feature vectors
-% % %                     figure;
-% % %                     subplot(2,2,1); hold on
-% % %                     hist(sorted_Ses_features(:,1),10);
-% % %                     h1 = findobj(gca,'Type','patch');
-% % %                     title('Slope','FontSize',14);
-% % %                     set(h1,'FaceColor','w','EdgeColor','r');
-% % % 
-% % %                     subplot(2,2,2); hold on
-% % %                     hist(sorted_Ses_features(:,2),10);
-% % %                     h2 = findobj(gca,'Type','patch');
-% % %                     title('Negative Peak','FontSize',14);
-% % %                     set(h1,'FaceColor','g');
-% % %                     
-% % %                     subplot(2,2,3); hold on
-% % %                     hist(sorted_Ses_features(:,3),10);
-% % %                     h3 = findobj(gca,'Type','patch');
-% % %                     title('Area Under the Curve','FontSize',14);
-% % %                     set(h1,'FaceColor','b');
-% % %                     
-% % %                     subplot(2,2,4); hold on
-% % %                     hist(sorted_Ses_features(:,4),10);
-% % %                     h4 = findobj(gca,'Type','patch');
-% % %                     title('Mahalanobis Distance','FontSize',14);
-% % %                     set(h1,'FaceColor','k');
-% %                     
-% %                     
-% %                     
-% %                 end
-% % end
-
 %% Plotting different metrics
 
 if plot_different_metrics == 1
@@ -1290,10 +1135,10 @@ end
 %% Plot Intent/min only
 if plot_intent_only == 1
                      
-            figure('Position',[100 1100 7*116 8*116]);     % [left bottom width height]
+            figure('Position',[100 1100 7.16*116 7*116]);     % [left bottom width height]
             height_inc = 0.05; 
             height_shift = 0.005;
-            I_plot = tight_subplot(8,2,[0.05 0.02],[0.1 0.05],[0.1 0.02]);
+            I_plot = tight_subplot(8,2,[0.05 0.02],[0.1 0.01],[0.1 0.01]);
             
             for p = 1:4:13
                 axes(I_plot(p));
@@ -1358,13 +1203,15 @@ if plot_intent_only == 1
 
                         bmi_performance = [bmi_performance;...
                                             [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR...
-                                             mean(Intent_per_min) std(Intent_per_min) block_duration_min median(Intent_per_min)]];
+                                             mean(Intent_per_min) std(Intent_per_min) block_duration_min quantile(Intent_per_min,3)]];
                         
                         Session_Intent_per_min = [Session_Intent_per_min; [block_n.*ones(length(Intent_per_min),1) Intent_per_min]];
                     end % ends block_n loop
 
-                    %        1          2               3                 4                 5               6                     7                          8                             9                                      10                                11                          12   
-                    % [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR mean(Intent_per_min) std(Intent_per_min) block_duration median(Intent_per_min)]
+                    %        1          2               3                 4                 5               6                     7                          8                             9                                      10                                11              ...               
+                    % [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR mean(Intent_per_min) std(Intent_per_min) block_duration ...  
+                    %                    12                                              13                                           14
+                    %       25-th percentile                median(Intent_per_min)        75-th percentile       ]
 
                     plotids = find(bmi_performance(:,1) == ses_n);
                     maxY = 100;
@@ -1388,75 +1235,152 @@ if plot_intent_only == 1
 %                             hold(ax(1),'off');
 % boxplots                          
                             hbox_axes = boxplot(Session_Intent_per_min(:,2),Session_Intent_per_min(:,1),'plotstyle','traditional','widths',0.5,'labelorientation','horizontal','symbol','o','colors','k'); % symbol - Outliers take same color as box
-                            set(hbox_axes(6,1:length(unique_blocks)),'Color','r');
+                            set(hbox_axes(6,1:length(unique_blocks)),'Color','k');
+                            set(hbox_axes(7,1:length(unique_blocks)),'MarkerSize',4);
                             h_axes = gca;
                             
                             %[herrbar_ses_intents1 herrbar_ses_intents2] = barwitherr(std(Session_Intent_per_min(:,2)),mean(Session_Intent_per_min(:,2)));
                             %set(herrbar_ses_intents1,'FaceColor',[1 1 1],'EdgeColor','b','LineWidth',1.5,'XData',11,'BarWidth',1);
                             %set(herrbar_ses_intents2,'Color','k','LineWidth',1.5,'XData',11);                         
                             h_overall = boxplot(h_axes, Session_Intent_per_min(:,2),'positions', [11],'plotstyle','traditional','widths',0.5,'symbol','o','colors','k'); % symbol - Outliers take same color as box
-                            set(h_overall(6),'Color','r');
+                            set(h_overall(6),'Color','k');
+                            set(h_overall(7),'MarkerSize',4);
                             set([hbox_axes h_overall],'LineWidth',1);
                             axis(h_axes,[0 max_ses4+4 0  maxY_ranges(subj_n)]);
+                            
+                            outlier_vals = unique(Session_Intent_per_min(Session_Intent_per_min(:,2) > maxY_ranges(subj_n),1))
+                            if ~isempty(outlier_vals)
+                                [~,vals_loc,~] = intersect(unique_blocks,outlier_vals);
+                                if ((subj_n == 2) || (subj_n == 4))
+                                    %plot(vals_loc,(maxY_ranges(subj_n)-2).*ones(length(vals_loc)),'^k','MarkerFaceColor','k');
+                                    %plot(11,maxY_ranges(subj_n)-2,'^k','MarkerFaceColor','k');
+                                elseif subj_n == 1
+                                    %plot(vals_loc,(maxY_ranges(subj_n)-6).*ones(length(vals_loc)),'^k','MarkerFaceColor','k');
+                                    %plot(11,maxY_ranges(subj_n)-6,'^k','MarkerFaceColor','k');
+                                else
+                                    %plot(vals_loc,(maxY_ranges(subj_n)-5).*ones(length(vals_loc)),'^k','MarkerFaceColor','k');
+                                    %plot(11,maxY_ranges(subj_n)-5,'^k','MarkerFaceColor','k');
+                                end
+                                
+                            end
+                                
+                            
                             set(h_axes,'YGrid','on')
-                            if subj_n == 1
-                                set(h_axes,'YTick',[0 25 maxY/2 75 maxY]);
-                                set(h_axes,'YTickLabel',{'0' '25' num2str(maxY/2) '75' num2str(maxY)},'FontSize',posterFontSize,'YColor','k');
+                            if subj_n == 1 || (subj_n == 3)
+                                set(h_axes,'YTick',[0 25 maxY/2 maxY]);
+                                set(h_axes,'YTickLabel',{'0' '25' num2str(maxY/2) num2str(maxY)},'FontSize',paper_font_size-1,'YColor','k');
                             else
-                                set(h_axes,'YTick',[0 10 25 maxY/2 75 maxY]);
-                                set(h_axes,'YTickLabel',{'0' '10' '25' num2str(maxY/2) '75' num2str(maxY)},'FontSize',posterFontSize,'YColor','k');
+                                set(h_axes,'YTick',[0 10 25 maxY/2  maxY]);
+                                set(h_axes,'YTickLabel',{'0' '10' '25' num2str(maxY/2) num2str(maxY)},'FontSize',paper_font_size-1,'YColor','k');
                             end
                             
                             switch subj_n
                                 case 1
-                                    title('Day 4, S1 (AT)','FontSize',posterFontSize);
+                                    %title({'Day 4';'S1 (AT)'},'FontSize',paper_font_size-1);
+                                    title({'Day 4'},'FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S1 (AT)','FontSize',paper_font_size-1);
                                     
                                 case 2
-                                    title('S2 (\bfBD\rm)','FontSize',posterFontSize);
+                                    %title('S2 (\bfBD\rm)','FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S2 (\bfBD\rm)','FontSize',paper_font_size-1);
+                                    
                                 case 3
-                                    title('S3 (AT)','FontSize',posterFontSize);
+                                    %title('S3 (AT)','FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S3 (AT)','FontSize',paper_font_size-1);
                                 case 4
-                                    title('S4 (\bfBD\rm)','FontSize',posterFontSize);
+                                    %title('S4 (\bfBD\rm)','FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S4 (\bfBD\rm)','FontSize',paper_font_size-1);
                             end
-                            h1 = ylabel(h_axes,{'Intents per';'min'},'FontSize',posterFontSize,'Rotation',90);
+                            h1 = ylabel(h_axes,{'Intents per';'min'},'FontSize',paper_font_size-1,'Rotation',90);
                             posy = get(h1,'Position');                          
                                                                                                          
                             axes(I_plot(axes_no + 2))
                             
                             hold on;
-                            barh = bar([1:length(plotids)], bmi_performance(plotids,11));
-                            set(barh,'FaceColor',[1 1 1],'LineWidth',1,'BarWidth',0.5);
-                            %dur_overall = boxplot(gca, bmi_performance(plotids,11),'positions', [11],'plotstyle','traditional','widths',0.5,'symbol','+','boxstyle','outline','colors',[0.6 0.6 0.6]); % symbol - Outliers take same color as box
-                            [herrbar_dur1 herrbar_dur2] = barwitherr(std(bmi_performance(plotids,11)),mean(bmi_performance(plotids,11)));
-                            set(herrbar_dur1,'EdgeColor','k','LineWidth',1,'XData',11,'BarWidth',0.5,'FaceColor',[1 1 1]);
-                            set(herrbar_dur2,'Color','k','LineWidth',1,'XData',11);
-                            
-                            axis([0 max_ses4+4 0 max(bmi_performance(plotids,11))+2]);
-                            set(gca,'XTick',[1:length(unique_blocks) 11]); 
-                            set(gca,'XTickLabel',{(1:length(unique_blocks)) 'Overall'},'FontSize',posterFontSize);
-                            ses4_median_dur = 5; % round(median(bmi_performance(plotids,11)));
-                            set(gca,'YTick', [0 ses4_median_dur])
-                            set(gca,'YTickLabel',{'0' num2str(ses4_median_dur)},'FontSize',posterFontSize);
-                            set(gca,'XGrid','on','YGrid', 'on')
-                            
-                            %if subj_n == 1
-                                barylab = ylabel({'Length';'(min)'},'FontSize',posterFontSize,'Rotation',90);
+                            if plot_CoV == 1
+                                % CoV = sd/mean
+                                reg_CoV = bmi_performance(plotids,10)./bmi_performance(plotids,9);
+                                plot(1:length(plotids),reg_CoV,'sk','MarkerFaceColor','k');
+                                %plot(1:length(plotids),reg_CoV,'-k');
+                                plot(11,std(Session_Intent_per_min(:,2))/mean(Session_Intent_per_min(:,2)),'sk','MarkerFaceColor','k');
+                                
+                                % Quartile CoV = (q75-q25)/(q75+q25)
+                                quartile_CoV = (bmi_performance(plotids,14) - bmi_performance(plotids,12))./(bmi_performance(plotids,14) + bmi_performance(plotids,12));
+                                %plot(1:length(plotids),quartile_CoV,'ob');
+                                %plot(1:length(plotids),quartile_CoV,'-b');
+                                %quant_overall = quantile(Session_Intent_per_min(:,2),3);
+                                %plot(11,(quant_overall(3)-quant_overall(1))/(quant_overall(3)+quant_overall(1)),'sb');
+                                
+                                
+                                if (subj_n == 1)
+                                    ses4_max_reg_Cov = 4.5;%max(reg_CoV);
+                                elseif subj_n == 2
+                                    ses4_max_reg_Cov = 3;%max(reg_CoV);
+                                elseif subj_n == 3
+                                    ses4_max_reg_Cov = 5.5;%max(reg_CoV);
+                                elseif subj_n == 4
+                                    ses4_max_reg_Cov = 1.5;%max(reg_CoV);
+                                end
+                                axis([0 max_ses4+4 0 ses4_max_reg_Cov+1]);
+                                set(gca,'XTick',[1:length(unique_blocks) 11]); 
+                                set(gca,'XTickLabel',{(1:length(unique_blocks)) 'Overall'},'FontSize',paper_font_size-1);
+                                set(gca,'YTick', [0 ses4_max_reg_Cov-0.5])
+                                set(gca,'YTickLabel',{'0' num2str(ses4_max_reg_Cov-0.5)},'FontSize',paper_font_size-1);
+                                set(gca,'XGrid','on','YGrid', 'on','Box','on')
+                                
+                                barylab = ylabel({'CoV'},'FontSize',paper_font_size-1,'Rotation',90);
                                 posbar = get(barylab,'Position');
                                 set(barylab,'Position',[posy(1) posbar(2) posbar(3)]);
-                            %end
-                            %text(posbar(1) -3.2,posbar(2)-2,'Duration','FontSize',posterFontSize);
-                            %text(posbar(1) -2.7,posbar(2)-6,'(min)','FontSize',posterFontSize);
-                            
-                            if subj_n == 4
-                                hxlab = xlabel({'Blocks of 20 trials'},'FontSize',posterFontSize);
-                                pos_hxlab = get(hxlab,'Position');
-                                set(hxlab,'Position',[pos_hxlab(1)-2 (pos_hxlab(2) - 1) pos_hxlab(3)]);
+                                
+                                
+                                mlr_ses4_CoV = LinearModel.fit(1:length(plotids),reg_CoV);
+                                if mlr_ses4_CoV.coefTest <= 0.05
+                                    line_regress = [ones(2,1) [1; size(plotids,1)]]*mlr_ses4_CoV.Coefficients.Estimate;
+                                    %axes(h_axes)
+                                    %hold(ax(1),'on');
+                                    %hold on; arrow([1 line_regress(1)],[size(patient_performance,1)+1 line_regress(2)],'LineWidth',1);
+                                    %set(gca,'XTickLabel',{' '});
+                                    plot(I_plot(axes_no + 2),[-1  size(plotids,1)+1],line_regress,'--k','LineWidth',0.5); hold on;
+                                    text(size(plotids,1)+1,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_ses4_CoV.Coefficients.Estimate(2))},'FontSize',paper_font_size-1);
+                                    %hold off;
+                                    %axes(ax(2))
+                                end
+                
+                            else
+                                barh = bar([1:length(plotids)], bmi_performance(plotids,11));
+                                set(barh,'FaceColor',[1 1 1],'LineWidth',1,'BarWidth',0.5);
+                                %dur_overall = boxplot(gca, bmi_performance(plotids,11),'positions', [11],'plotstyle','traditional','widths',0.5,'symbol','+','boxstyle','outline','colors',[0.6 0.6 0.6]); % symbol - Outliers take same color as box
+                                [herrbar_dur1 herrbar_dur2] = barwitherr(std(bmi_performance(plotids,11)),mean(bmi_performance(plotids,11)));
+                                set(herrbar_dur1,'EdgeColor','k','LineWidth',1,'XData',11,'BarWidth',0.5,'FaceColor',[1 1 1]);
+                                set(herrbar_dur2,'Color','k','LineWidth',1,'XData',11);
+
+                                axis([0 max_ses4+4 0 max(bmi_performance(plotids,11))+2]);
+                                set(gca,'XTick',[1:length(unique_blocks) 11]); 
+                                set(gca,'XTickLabel',{(1:length(unique_blocks)) 'Overall'},'FontSize',paper_font_size-1);
+                                ses4_median_dur = 5; % round(median(bmi_performance(plotids,11)));
+                                set(gca,'YTick', [0 ses4_median_dur])
+                                set(gca,'YTickLabel',{'0' num2str(ses4_median_dur)},'FontSize',paper_font_size-1);
+                                set(gca,'XGrid','on','YGrid', 'on')
+
+                                %if subj_n == 1
+                                    barylab = ylabel({'Length';'(min)'},'FontSize',paper_font_size-1,'Rotation',90);
+                                    posbar = get(barylab,'Position');
+                                    set(barylab,'Position',[posy(1) posbar(2) posbar(3)]);
+                                %end
+                                %text(posbar(1) -3.2,posbar(2)-2,'Duration','FontSize',paper_font_size-1);
+                                %text(posbar(1) -2.7,posbar(2)-6,'(min)','FontSize',paper_font_size-1);
                             end
-                        
-                        dur_pos = get(gca,'Position');
-                        intent_pos = get(h_axes,'Position');
-                       set(h_axes,'Position',[dur_pos(1) intent_pos(2) dur_pos(3) intent_pos(4)]);
-                            
+
+                                if subj_n == 4
+                                    hxlab = xlabel({'Blocks of 20 trials'},'FontSize',paper_font_size-1);
+                                    pos_hxlab = get(hxlab,'Position');
+                                    set(hxlab,'Position',[pos_hxlab(1)-2 (pos_hxlab(2) ) pos_hxlab(3)]);
+                                end
+
+                                dur_pos = get(gca,'Position');
+                                intent_pos = get(h_axes,'Position');
+                                set(h_axes,'Position',[dur_pos(1) intent_pos(2) dur_pos(3) intent_pos(4)]);
+                         
                         case 5
                            
                             axes_no = 4*subj_n-2;
@@ -1465,72 +1389,147 @@ if plot_intent_only == 1
 
                             % boxplots                          
                             hbox_axes = boxplot(Session_Intent_per_min(:,2),Session_Intent_per_min(:,1),'plotstyle','traditional','widths',0.5,'labelorientation','horizontal','symbol','o','colors','k'); % symbol - Outliers take same color as box
-                            set(hbox_axes(6,1:length(unique_blocks)),'Color','r');
+                            set(hbox_axes(6,1:length(unique_blocks)),'Color','k');
+                            set(hbox_axes(7,1:length(unique_blocks)),'MarkerSize',4);
                             h_axes = gca;
                             h_overall = boxplot(h_axes, Session_Intent_per_min(:,2),'positions', [11],'plotstyle','traditional','widths',0.5,'symbol','o','colors','k'); % symbol - Outliers take same color as box
-                            set(h_overall(6),'Color','r');
+                            set(h_overall(6),'Color','k');
+                            set(h_overall(7),'MarkerSize',4);
                             set([hbox_axes h_overall],'LineWidth',1);
+                            
                             axis(h_axes,[0 max_ses5+3 0  maxY_ranges(subj_n)]);
+                            % Add triangles when the outliers is outside the
+                            % axes and not shown in figure
+                            outlier_vals = unique(Session_Intent_per_min(Session_Intent_per_min(:,2) > maxY_ranges(subj_n),1));
+                            if ~isempty(outlier_vals)
+                                [~,vals_loc,~] = intersect(unique_blocks,outlier_vals);
+                                if ((subj_n == 2) || (subj_n == 4))
+                                    %plot(vals_loc,(maxY_ranges(subj_n)-2).*ones(length(vals_loc)),'^k','MarkerFaceColor','k');
+                                    %plot(11,maxY_ranges(subj_n)-2,'^k','MarkerFaceColor','k');
+                                elseif subj_n == 1
+                                    %plot(vals_loc,(maxY_ranges(subj_n)-6).*ones(length(vals_loc)),'^k','MarkerFaceColor','k');
+                                    %plot(11,maxY_ranges(subj_n)-6,'^k','MarkerFaceColor','k');
+                                else
+                                    %plot(vals_loc,(maxY_ranges(subj_n)-5).*ones(length(vals_loc)),'^k','MarkerFaceColor','k');
+                                    %plot(11,maxY_ranges(subj_n)-5,'^k','MarkerFaceColor','k');
+                                    
+                                end
+                                
+                            end
+                            
                             %[herrbar_ses_intents1 herrbar_ses_intents2] = barwitherr(std(Session_Intent_per_min(:,2)),mean(Session_Intent_per_min(:,2)));
                             %set(herrbar_ses_intents1,'FaceColor',[1 1 1],'EdgeColor','b','LineWidth',1.5,'XData',11,'BarWidth',1);
                             %set(herrbar_ses_intents2,'Color','k','LineWidth',1.5,'XData',11);                         
                             
                             set(h_axes,'YGrid','on')
-                            if subj_n == 1
-                                set(h_axes,'YTick',[0 25 maxY/2 75 maxY]);
+                            if (subj_n == 1) || (subj_n == 3)
+                                set(h_axes,'YTick',[0 25 maxY/2 maxY]);
                                 set(h_axes,'YTickLabel',{' '});
                             else
-                                set(h_axes,'YTick',[0 10 25 maxY/2 75 maxY]);
+                                set(h_axes,'YTick',[0 10 25 maxY/2 maxY]);
                                 set(h_axes,'YTickLabel',{' '});
                             end
                             
                             switch subj_n
                                 case 1
-                                    title('Day 5, S1 (AT)','FontSize',posterFontSize);
-                                    %h1 = ylabel(h_axes,{'Intents per';'min'},'FontSize',posterFontSize,'Rotation',90);
+                                    title({'Day 5'},'FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S1 (AT)','FontSize',paper_font_size-1);
+                                    %h1 = ylabel(h_axes,{'Intents per';'min'},'FontSize',paper_font_size-1,'Rotation',90);
                                     %posy = get(h1,'Position');
                                 case 2
-                                    title('S2 (AT)','FontSize',posterFontSize);
+                                    %title('S2 (AT)','FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S2 (AT)','FontSize',paper_font_size-1);
                                 case 3
-                                    title('S3 (AT)','FontSize',posterFontSize);
+                                    %title('S3 (AT)','FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S3 (AT)','FontSize',paper_font_size-1);
                                 case 4
-                                    title('S4 (AT)','FontSize',posterFontSize);
+                                    %title('S4 (AT)','FontSize',paper_font_size-1);
+                                    text(0,maxY_ranges(subj_n)-5,'S4 (AT)','FontSize',paper_font_size-1);
                             end
-
-
                             
-                            %h1 = ylabel(h_axes,{'Intents per min'},'FontSize',posterFontSize,'Rotation',90);
+                            %h1 = ylabel(h_axes,{'Intents per min'},'FontSize',paper_font_size-1,'Rotation',90);
                             %posy = get(h1,'Position');
                             %set(h1,'Position',[(posy(1) - 0.05) posy(2:3)]);
-                            %text(posy(1) - 3,posy(2)+8,'Subject','FontSize',posterFontSize);
+                            %text(posy(1) - 3,posy(2)+8,'Subject','FontSize',paper_font_size-1);
                                                                              
                             axes(I_plot(axes_no + 2))
                             
                             hold on;
-                            barh = bar([1:length(plotids)], bmi_performance(plotids,11));
-                            set(barh,'FaceColor',[1 1 1],'LineWidth',1,'BarWidth',0.5);
-                            [herrbar_dur1 herrbar_dur2] = barwitherr(std(bmi_performance(plotids,11)),mean(bmi_performance(plotids,11)));
-                            set(herrbar_dur1,'EdgeColor','k','LineWidth',1,'XData',11,'BarWidth',0.5,'FaceColor',[1 1 1]);
-                            set(herrbar_dur2,'Color','k','LineWidth',1,'XData',11);
-                            
-                            axis([0 max_ses5+3 0 max(bmi_performance(plotids,11))+2]);
-                            set(gca,'XTick',[1:length(unique_blocks) 11]); 
-                            set(gca,'XTickLabel',{(1:length(unique_blocks)) 'Overall'},'FontSize',posterFontSize);
-                            set(gca,'YTick', [0 ses4_median_dur]);
-                            set(gca,'YTickLabel',{' '},'FontSize',posterFontSize);
-                            set(gca,'XGrid','on','Ygrid','on');
-                            
-                            %barylab = ylabel({'Duration';'(min)'},'FontSize',posterFontSize,'Rotation',90);
-                            %posbar = get(barylab,'Position');
-                            %set(barylab,'Position',[(posbar(1))-1 posbar(2)-4 posbar(3)]);
-                            %text(posbar(1) -3.2,posbar(2)-2,'Duration','FontSize',posterFontSize);
-                            %text(posbar(1) -2.7,posbar(2)-6,'(min)','FontSize',posterFontSize);
-                            
-                            if subj_n == 4
-                                hxlab = xlabel({'Blocks of 20 trials'},'FontSize',posterFontSize);
-                                pos_hxlab = get(hxlab,'Position');
-                                set(hxlab,'Position',[pos_hxlab(1)-2 (pos_hxlab(2) - 1) pos_hxlab(3)]);
+                            if plot_CoV == 1
+                                % CoV = sd/mean
+                                reg_CoV = bmi_performance(plotids,10)./bmi_performance(plotids,9);
+                                plot(1:length(plotids),reg_CoV,'sk','MarkerFaceColor','k');
+                                %plot(1:length(plotids),reg_CoV,'-k');
+                                plot(11,std(Session_Intent_per_min(:,2))/mean(Session_Intent_per_min(:,2)),'sk','MarkerFaceColor','k');
+                                
+                                % Quartile CoV = (q75-q25)/(q75+q25)
+                                quartile_CoV = (bmi_performance(plotids,14) - bmi_performance(plotids,12))./(bmi_performance(plotids,14) + bmi_performance(plotids,12));
+                                %plot(1:length(plotids),quartile_CoV,'ob');
+                                %plot(1:length(plotids),quartile_CoV,'-b');
+                                %quant_overall = quantile(Session_Intent_per_min(:,2),3);
+                                %overall_quartile_CoV = (quant_overall(3)-quant_overall(1))/(quant_overall(3)+quant_overall(1));
+                                %plot(11,overall_quartile_CoV,'sb');
+                                
+                                if (subj_n == 1)
+                                    ses5_max_reg_Cov = 4.5;%max(reg_CoV);
+                                elseif subj_n == 2
+                                    ses5_max_reg_Cov = 3;%max(reg_CoV);
+                                elseif subj_n == 3
+                                    ses5_max_reg_Cov = 5.5;%max(reg_CoV);
+                                elseif subj_n == 4
+                                    ses5_max_reg_Cov = 1.5;%max(reg_CoV);
+                                end
+                                axis([0 max_ses5+3 0 ses5_max_reg_Cov+1]);
+                                set(gca,'XTick',[1:length(unique_blocks) 11]); 
+                                set(gca,'XTickLabel',{(1:length(unique_blocks)) 'Overall'},'FontSize',paper_font_size-1);
+                                set(gca,'YTick', [0 ses5_max_reg_Cov-0.5]);
+                                set(gca,'YTickLabel',{' '},'FontSize',paper_font_size-1);
+                                set(gca,'XGrid','on','Ygrid','on','Box','on');
+                                
+                                %barylab = ylabel({'CoV';' '},'FontSize',paper_font_size-1,'Rotation',90);
+                                %posbar = get(barylab,'Position');
+                                %set(barylab,'Position',[posy(1) posbar(2) posbar(3)]);
+                                
+                                mlr_ses5_CoV = LinearModel.fit(1:length(plotids),reg_CoV);
+                                if mlr_ses5_CoV.coefTest <= 0.05
+                                    line_regress = [ones(2,1) [1; size(plotids,1)]]*mlr_ses5_CoV.Coefficients.Estimate;
+                                    %axes(h_axes)
+                                    %hold(ax(1),'on');
+                                    %hold on; arrow([1 line_regress(1)],[size(patient_performance,1)+1 line_regress(2)],'LineWidth',1);
+                                    %set(gca,'XTickLabel',{' '});
+                                    plot(I_plot(axes_no + 2),[-1  size(plotids,1)+1],line_regress,'--k','LineWidth',0.5); hold on;
+                                    text(size(plotids,1)+1,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_ses5_CoV.Coefficients.Estimate(2))},'FontSize',paper_font_size-1);
+                                    %hold off;
+                                    %axes(ax(2))
+                                end
+                                
+                            else
+                                barh = bar([1:length(plotids)], bmi_performance(plotids,11));
+                                set(barh,'FaceColor',[1 1 1],'LineWidth',1,'BarWidth',0.5);
+                                [herrbar_dur1 herrbar_dur2] = barwitherr(std(bmi_performance(plotids,11)),mean(bmi_performance(plotids,11)));
+                                set(herrbar_dur1,'EdgeColor','k','LineWidth',1,'XData',11,'BarWidth',0.5,'FaceColor',[1 1 1]);
+                                set(herrbar_dur2,'Color','k','LineWidth',1,'XData',11);
+
+                                axis([0 max_ses5+3 0 max(bmi_performance(plotids,11))+2]);
+                                set(gca,'XTick',[1:length(unique_blocks) 11]); 
+                                set(gca,'XTickLabel',{(1:length(unique_blocks)) 'Overall'},'FontSize',paper_font_size-1);
+                                set(gca,'YTick', [0 ses4_median_dur]);
+                                set(gca,'YTickLabel',{' '},'FontSize',paper_font_size-1);
+                                set(gca,'XGrid','on','Ygrid','on');
+
+                                %barylab = ylabel({'Duration';'(min)'},'FontSize',paper_font_size-1,'Rotation',90);
+                                %posbar = get(barylab,'Position');
+                                %set(barylab,'Position',[(posbar(1))-1 posbar(2)-4 posbar(3)]);
+                                %text(posbar(1) -3.2,posbar(2)-2,'Duration','FontSize',paper_font_size-1);
+                                %text(posbar(1) -2.7,posbar(2)-6,'(min)','FontSize',paper_font_size-1);
+                                                                
                             end
+                                if subj_n == 4
+                                    hxlab = xlabel({'Blocks of 20 trials'},'FontSize',paper_font_size-1);
+                                    pos_hxlab = get(hxlab,'Position');
+                                    set(hxlab,'Position',[pos_hxlab(1)-2 (pos_hxlab(2) ) pos_hxlab(3)]);
+                                end
+                           
                             
                         otherwise
                             error('Incorrect Session Number in data.');
@@ -1544,15 +1543,17 @@ if plot_intent_only == 1
 %                     bmi_performance((bmi_performance (:,1) == 4),:) = [];
 %                 end
 
-                mlr_intents = LinearModel.fit(1:length(plotids),bmi_performance(plotids,12));
+                mlr_intents = LinearModel.fit(1:length(plotids),bmi_performance(plotids,13));
                 if mlr_intents.coefTest <= 0.05
                     line_regress = [ones(2,1) [1; size(plotids,1)]]*mlr_intents.Coefficients.Estimate;
                     %line_regress = line_regress - min(bmi_performance(plotids,12)');
                     axes(h_axes)
                     %hold(ax(1),'on');
                     %hold on; arrow([1 line_regress(1)],[size(patient_performance,1)+1 line_regress(2)],'LineWidth',1);
-                    plot(h_axes,[-1  size(plotids,1)+1],line_regress,'--b','LineWidth',0.5); hold on;
-                    text(size(plotids,1)+1,line_regress(2)+2,sprintf('Slope \n %.2f',mlr_intents.Coefficients.Estimate(2)),'FontSize',10)
+                    set(gca,'XTickLabel',{' '});
+                    plot(h_axes,[-1  size(plotids,1)+1],line_regress,'--k','LineWidth',0.5); hold on;
+                    %text(size(plotids,1)+1,line_regress(2)+2,sprintf('Slope \n %.2f',mlr_intents.Coefficients.Estimate(2)),'FontSize',10)
+                    text(size(plotids,1)+1,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_intents.Coefficients.Estimate(2))},'FontSize',paper_font_size-1);
                     %hold off;
                     %axes(ax(2))
                 end
@@ -1569,11 +1570,183 @@ if plot_intent_only == 1
             %style.Bounds = 'tight';
             %hgexport(fig,'-clipboard',style,'applystyle', true);
             %drawnow;
+            
+            annotation('textbox',[0 0 0.1 0.07],'String','*\itp\rm < 0.05','EdgeColor','none');
+            response = input('Save the figure yourself Dude!! [y/n]: ','s');
+%             if strcmp(response,'y')
+%                  tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_intents_per_min.tif'];
+%                  fig_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_intents_per_min.tif'];
+%                 print('-dtiff', '-r300', tiff_filename); 
+%                 saveas(gcf,fig_filename);
+%             else
+%                 disp('Save figure aborted');
+%             end
 
+end
+
+%% Plot TPR FPR comparison  - OLD format                   
+if plot_tpr_fpr_comparison_old == 1
+                     
+            figure('Position',[100 1100 4*116 8*116]);     % [left bottom width height]
+            T_plot = tight_subplot(4,2,[0.05 0.01],[0.1 0.05],[0.1 0.3]);
+                      
+            for subj_n = 1:4
+                bmi_performance = [];
+                 
+                for n = 1:length(Sess_nums)
+                    ses_n = Sess_nums(n);
+                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
+                    if ~exist(fileid,'file')
+                        continue
+                    end
+                    cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+                    
+                    unique_blocks = unique(cl_ses_data(:,1));
+                    for m = 1:length(unique_blocks)
+                        block_n = unique_blocks(m);
+                        load([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_block' num2str(block_n) '_closeloop_results.mat']);
+                        block_start_stop_index = find(marker_block(:,2) == 50);
+                        block_performance = cl_ses_data(cl_ses_data(:,1) == block_n,:);
+                        block_duration_min = diff(double(marker_block(block_start_stop_index,1)))/500/60;
+                        
+                        ind_valid_trials = find(block_performance(:,4) == 1);  % col 4 - Valid(1) or Catch(2)
+                        ind_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); % col 5 - Intent detected
+                        block_TPR = length(ind_success_valid_trials)/length(ind_valid_trials);      % TPR
+
+                        ind_catch_trials = find(block_performance(:,4) == 2);
+                        ind_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+                        block_FPR = length(ind_failed_catch_trials)/length(ind_catch_trials); %FPR
+
+                        time_to_trigger_success_valid_trials = block_performance(ind_success_valid_trials,6); %col 6 - Time to Trigger
+                        Intent_per_min = 60./time_to_trigger_success_valid_trials;
+
+                        ind_eeg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,8) == 1)); % col 8 - EEG decisions
+                        ind_eeg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,8) == 1));
+                        EEG_TPR = length(ind_eeg_success_valid_trials)/length(ind_valid_trials);
+                        EEG_FPR = length(ind_eeg_failed_catch_trials)/length(ind_catch_trials);
+
+                        % Correction: Use col 5 - Intent detected instead of col 9 - EEG+EMG decisions
+                        ind_eeg_emg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); 
+                        ind_eeg_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+                        EEG_EMG_TPR = length(ind_eeg_emg_success_valid_trials)/length(ind_valid_trials);
+                        EEG_EMG_FPR = length(ind_eeg_emg_failed_catch_trials)/length(ind_catch_trials);
+
+                        bmi_performance = [bmi_performance;...
+                                            [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR...
+                                             mean(Intent_per_min) std(Intent_per_min) block_duration_min median(Intent_per_min)]];
+                        
+                        
+                    end % ends block_n loop
+
+                    %        1          2               3                 4                 5               6                     7                          8                             9                                      10                                11                          12   
+                    % [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR mean(Intent_per_min) std(Intent_per_min) block_duration median(Intent_per_min)]
+
+                    plotids = find(bmi_performance(:,1) == ses_n);
+                    
+                    switch ses_n
+                        case 4 % Session 4
+                            axes_no = 2*subj_n-1;
+                            axes(T_plot(axes_no)); 
+                            hold on;
+                            hbox_axes = boxplot(100.*bmi_performance(:,[5 7 6 8]),'plotstyle','traditional','widths',0.5,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                     'positions',[0.5 1.25 3 3.75]); % symbol - Outliers take same color as box
+                            set(hbox_axes(6,1:4),'Color','k');
+                            set(hbox_axes(5,[1 3]),'LineStyle','-');
+                            set(hbox_axes([1 2],1:4),'LineStyle','-');
+                            set(hbox_axes(7,[1 3]),'MarkerFaceColor',[0.6 0.6 0.6])
+                            set(hbox_axes(7,1:4),'MarkerSize',4);
+                            h_colors = findobj(gca,'Tag','Box');
+                            box_colors = [1 1 1;0.6 0.6 0.6; 1 1 1; 0.6 0.6 0.6];
+                            for j = 1:length(h_colors)
+                                patch(get(h_colors(j),'XData'), get(h_colors(j),'YData'),box_colors(j,:),'FaceAlpha',0.5);
+                            end
+                            h_axes = gca;                            
+                            set(hbox_axes,'LineWidth',1);
+                            axis(h_axes,[0 4.5 -10  125]);
+                            set(h_axes,'YGrid','on')
+                            set(h_axes,'YTick',[0 50 100]);
+                            set(h_axes,'YTickLabel',{'0' '50' '100'},'FontSize',paper_font_size-1,'YColor','k');
+                            set(h_axes,'Xtick',[0.875 3.275]);
+                            set(h_axes,'XtickLabel',{' '})
+                            
+                            set(h_axes,'Box','on')
+                            
+                            switch subj_n
+                                case 1
+                                    title('Day 4, S1 (AT)','FontSize',posterFontSize);                                   
+                                case 2
+                                    title('S2 (\bfBD\rm)','FontSize',posterFontSize);
+                                case 3
+                                    title('S3 (AT)','FontSize',posterFontSize);
+                                    ax_pos = get(gca,'Position');
+                                    text(ax_pos(1)-1.2, 40,'Closed-loop Performance','FontSize',posterFontSize,'Rotation',90);
+                                case 4
+                                    title('S4 (\bfBD\rm)','FontSize',posterFontSize);
+                                    set(h_axes,'XtickLabel',{'TPR (%)' 'FPR (%)'})
+                                    
+                            end                                                                                                        
+                            
+                            case 5
+                            axes_no = 2*subj_n;
+                            axes(T_plot(axes_no)); 
+                            hold on;
+
+                            hbox_axes = boxplot(100.*bmi_performance(:,[5 7 6 8]),'plotstyle','traditional','widths',0.5,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                     'positions',[0.5 1.25 3 3.75]); % symbol - Outliers take same color as box
+                            set(hbox_axes(6,1:4),'Color','k');
+                            set(hbox_axes(5,[1 3]),'LineStyle','-');
+                            set(hbox_axes([1 2],1:4),'LineStyle','-');
+                            set(hbox_axes(7,[1 3]),'MarkerFaceColor',[0.6 0.6 0.6]);
+                            set(hbox_axes(7,1:4),'MarkerSize',4);
+                            h_colors = findobj(gca,'Tag','Box');
+                            box_colors = [1 1 1;0.6 0.6 0.6; 1 1 1; 0.6 0.6 0.6];
+                            for j = 1:length(h_colors)
+                                patch(get(h_colors(j),'XData'), get(h_colors(j),'YData'),box_colors(j,:),'FaceAlpha',0.5);
+                            end                           
+                            h_axes = gca;                            
+                            set(hbox_axes,'LineWidth',1);
+                            axis(h_axes,[0 4.5 -10  125]);
+                            set(h_axes,'YGrid','on')
+                            set(h_axes,'YTick',[0 50 100]);
+                            set(h_axes,'YTickLabel',{' '},'FontSize',posterFontSize,'YColor','k');
+                            set(h_axes,'Xtick',[0.875 3.275]);
+                            set(h_axes,'XtickLabel',{' '})
+                            
+                            switch subj_n
+                                case 1
+                                    title('Day 5, S1 (AT)','FontSize',posterFontSize);
+                                    %h1 = ylabel(h_axes,{'Intents per';'min'},'FontSize',posterFontSize,'Rotation',90);
+                                    %posy = get(h1,'Position');
+                                    legend('EEG + EMG','EEG only','location','NorthEastOutside');
+                                case 2
+                                    title('S2 (AT)','FontSize',posterFontSize);
+                                case 3
+                                    title('S3 (AT)','FontSize',posterFontSize);
+                                case 4
+                                    title('S4 (AT)','FontSize',posterFontSize);
+                                    set(h_axes,'XtickLabel',{'TPR (%)' 'FPR (%)'})
+                            end
+                            
+                        otherwise
+                            error('Incorrect Session Number in data.');
+                    end %end switch 
+                end % ends ses_n loop               
+            end % ends subj_n loop
+             %print -dtiff -r450 PLSH_block_accuracy_modified.tif
+             %saveas(gca,'PLSH_block_accuracy_modified.fig')
+
+             % Expand axes to fill figure
+%             fig = gcf;
+%             style = hgexport('factorystyle');
+%             style.Bounds = 'tight';
+%             hgexport(fig,'-clipboard',style,'applystyle', true);
+%             drawnow;
+            
             response = input('Save figure to folder [y/n]: ','s');
             if strcmp(response,'y')
-                 tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_intents_per_min.tif'];
-                 fig_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_intents_per_min.tif'];
+                 tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_tpr_fpr.tif'];
+                 fig_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_tpr_fpr.tif'];
                 print('-dtiff', '-r300', tiff_filename); 
                 saveas(gcf,fig_filename);
             else
@@ -1582,6 +1755,670 @@ if plot_intent_only == 1
 
 end
                     
+%% Plot TPR FPR comparison  - NEW format                   
+if plot_tpr_fpr_comparison_new == 1
+              
+            tpr_fpr_performance = [];
+            for subj_n = 1:4                 
+                for n = 1:length(Sess_nums)
+                    ses_n = Sess_nums(n);
+                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
+                    if ~exist(fileid,'file')
+                        continue
+                    end
+                    cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+                    
+                    unique_blocks = unique(cl_ses_data(:,1));
+                    for m = 1:length(unique_blocks)
+                        block_n = unique_blocks(m);
+                        load([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_block' num2str(block_n) '_closeloop_results.mat']);
+                        block_start_stop_index = find(marker_block(:,2) == 50);
+                        block_performance = cl_ses_data(cl_ses_data(:,1) == block_n,:);
+                                               
+                        ind_valid_trials = find(block_performance(:,4) == 1);  % col 4 - Valid(1) or Catch(2)
+                        ind_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); % col 5 - Intent detected
+                        block_TPR = length(ind_success_valid_trials)/length(ind_valid_trials);      % TPR
+
+                        ind_catch_trials = find(block_performance(:,4) == 2);
+                        ind_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+                        block_FPR = length(ind_failed_catch_trials)/length(ind_catch_trials); %FPR
+
+                        ind_eeg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,8) == 1)); % col 8 - EEG decisions
+                        ind_eeg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,8) == 1));
+                        EEG_TPR = length(ind_eeg_success_valid_trials)/length(ind_valid_trials);
+                        EEG_FPR = length(ind_eeg_failed_catch_trials)/length(ind_catch_trials);
+
+                        % Correction: Use col 5 - Intent detected instead of col 9 - EEG+EMG decisions
+                        ind_eeg_emg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); 
+                        ind_eeg_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+                        EEG_EMG_TPR = length(ind_eeg_emg_success_valid_trials)/length(ind_valid_trials);
+                        EEG_EMG_FPR = length(ind_eeg_emg_failed_catch_trials)/length(ind_catch_trials);
+
+                        tpr_fpr_performance = [tpr_fpr_performance;...
+                                            [subj_n ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR]];                       
+                    end % ends block_n loop
+                end % ends ses_n loop               
+            end % ends subj_n loop
+
+                    %        1          2                 3                 4                 5               6                     7                          8                             9
+                    % [subj_n  ses_n       block_n block_TPR block_FPR EEG_TPR      EEG_FPR        EEG_EMG_TPR     EEG_EMG_FPR
+                                         
+                    figure('Position',[100 1100 5*116 4.5*116]);     % [left bottom width height]
+                    T_plot = tight_subplot(2,2,[0.01 0.1],[0.1 0.1],[0.1 0.01]);
+                    
+                    for ses = 4:5
+                        Ses_tpr_fpr =  tpr_fpr_performance(find(tpr_fpr_performance(:,2) == ses),:);
+                        axes(T_plot(ses-3)); 
+                        hold on;
+                        hbox1_axes = boxplot(100.*Ses_tpr_fpr(:,6), Ses_tpr_fpr(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                 'positions',[1.1 2.1 3.1 4.1]); % symbol - Outliers take same color as box
+                        set(hbox1_axes,'LineWidth',1);
+                        set(gca,'XtickLabel',{' '});
+                        set(hbox1_axes(7,1:4),'MarkerFaceColor',[0.6 0.6 0.6])
+                        set(hbox1_axes(7,1:4),'MarkerSize',4);
+                        set(hbox1_axes(6,1:4),'Color','k');
+                        set(hbox1_axes(5,1:4),'Color','k');
+                        set(hbox1_axes([1 2],1:4),'LineStyle','-');
+                        
+                        h_colors = findobj(gca,'Tag','Box');
+                        for j = 1:length(h_colors)
+                            patch(get(h_colors(j),'XData'), get(h_colors(j),'YData'),[0.6 0.6 0.6]);
+                        end
+                        hbox2_axes = boxplot(100.*Ses_tpr_fpr(:,8), Ses_tpr_fpr(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                 'positions',[0.85 1.85 2.85 3.85]); % symbol - Outliers take same color as box
+                        set(hbox2_axes,'LineWidth',1);                   
+                        set(hbox2_axes(7,1:4),'MarkerSize',4);
+                        set(gca,'XtickLabel',{' '});
+                        set(hbox2_axes(6,1:4),'Color','k');
+                        set(hbox2_axes(5,1:4),'Color','k');
+                        set(hbox2_axes([1 2],1:4),'LineStyle','-');
+                        
+                        h_axes = gca;                            
+                        axis(h_axes,[0.5 4.5 -10  115]);
+                        set(h_axes,'YGrid','on')
+                        set(h_axes,'YTick',[0 25 50 75 100]);
+                        set(h_axes,'YTickLabel',{'0' '25' '50' '75' '100'},'FontSize',posterFontSize,'YColor','k');
+                        set(h_axes,'Xtick',[(0.85 + 1.1)/2 (1.85 + 2.1)/2 (2.85 + 3.1)/2 (3.85 + 4.1)/2]);
+                        set(h_axes,'XtickLabel',{' '});
+                        title(h_axes,['Day ' num2str(ses)]);
+                        ylabel(h_axes,'TPR (%)');
+                        set(h_axes,'Box','on')
+                        
+                        % Significance tests
+                    	p_values = [];
+                        for subj_n = 1:4
+                            % both-tailed Wilcoxon Rank sum Test, i.e. median(EEG + EMG) >< median(EEG only)
+                            [pwilcoxon,h,stats] = ranksum(Ses_tpr_fpr((Ses_tpr_fpr(:,1) == subj_n),8),Ses_tpr_fpr((Ses_tpr_fpr(:,1) == subj_n),6),'alpha',0.05,'tail','both');
+                            if (pwilcoxon <= 0.05) && (pwilcoxon > 0.01) 
+                                p_values = [p_values 0.05];
+                            elseif (pwilcoxon <= 0.01)
+                                p_values = [p_values 0.01];
+                            else
+                                p_values = [p_values NaN];
+                            end
+                        end
+                        sigstar({[0.85 1.1],[1.85 2.1], [2.85 3.1], [3.85 4.1]},p_values);
+                            
+                        % ----------------------------------- Plot FPR
+                        axes(T_plot(ses-1)); 
+                        hold on;
+                        hbox1_axes = boxplot(100.*Ses_tpr_fpr(:,7), Ses_tpr_fpr(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                 'positions',[1.1 2.1 3.1 4.1]); % symbol - Outliers take same color as box
+                        set(hbox1_axes,'LineWidth',1);                   
+                        set(gca,'XtickLabel',{' '});
+                        set(hbox1_axes(7,1:4),'MarkerFaceColor',[0.6 0.6 0.6])
+                        set(hbox1_axes(7,1:4),'MarkerSize',4);
+                        set(hbox1_axes(6,1:4),'Color','k');
+                        set(hbox1_axes(5,1:4),'Color','k');
+                        set(hbox1_axes([1 2],1:4),'LineStyle','-');
+                        
+                        h_colors = findobj(gca,'Tag','Box');
+                        for j = 1:length(h_colors)
+                            h_patch(j) = patch(get(h_colors(j),'XData'), get(h_colors(j),'YData'),[0.6 0.6 0.6]);
+                        end
+                        hbox2_axes = boxplot(100.*Ses_tpr_fpr(:,9), Ses_tpr_fpr(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                 'positions',[0.85 1.85 2.85 3.85]); % symbol - Outliers take same color as box
+                        set(hbox2_axes,'LineWidth',1);                   
+                        set(hbox2_axes(7,1:4),'MarkerSize',4);
+                        set(gca,'XtickLabel',{' '});
+                        set(hbox2_axes(6,1:4),'Color','k');
+                        set(hbox2_axes(5,1:4),'Color','k');
+                        set(hbox2_axes([1 2],1:4),'LineStyle','-');
+                        
+                        h_axes = gca;                            
+                        axis(h_axes,[0.5 4.5 -10  115]);
+                        set(h_axes,'YGrid','on')
+                        set(h_axes,'YTick',[0 25 50 75 100]);
+                        set(h_axes,'YTickLabel',{'0' '25' '50' '75' '100'},'FontSize',posterFontSize,'YColor','k');
+                        set(h_axes,'Xtick',[(0.85 + 1.1)/2 (1.85 + 2.1)/2 (2.85 + 3.1)/2 (3.85 + 4.1)/2]);
+                        if ses == 4
+                            set(h_axes,'XtickLabel',{'S1', 'S2 (BD)', 'S3', 'S4 (BD)'});
+                        else
+                            set(h_axes,'XtickLabel',{'S1', 'S2', 'S3', 'S4'});
+                        end
+                        xlabel(h_axes,'Subjects');
+                        ylabel(h_axes,'FPR (%)');
+                        set(h_axes,'Box','on');
+                        
+                        h_colors_w = findobj(gca,'Tag','Box');
+                        for j = 1:1 %length(h_colors_w)
+                            h_patch_w = patch(get(h_colors_w(j),'XData'), get(h_colors_w(j),'YData'),[1 1 1]);
+                        end
+                        
+                        % Significance tests
+                    	p_values = [];
+                        for subj_n = 1:4
+                            % both-tailed Wilcoxon Rank sum Test, i.e. median(EEG + EMG) > < median(EEG only)
+                            [pwilcoxon,h,stats] = ranksum(Ses_tpr_fpr((Ses_tpr_fpr(:,1) == subj_n),9),Ses_tpr_fpr((Ses_tpr_fpr(:,1) == subj_n),7),'alpha',0.05,'tail','both');
+                            if (pwilcoxon <= 0.05) && (pwilcoxon > 0.01) 
+                                p_values = [p_values 0.05];
+                            elseif (pwilcoxon <= 0.01)
+                                p_values = [p_values 0.01];
+                            else
+                                p_values = [p_values NaN];
+                            end
+                        end
+                        sigstar({[0.85 1.1],[1.85 2.1], [2.85 3.1], [3.85 4.1]},p_values);                        
+                    end
+             
+                         axes_pos = get(gca,'Position');    % [left bottom width height]
+                         box_leg = legend([h_patch_w h_patch(4)],'EEG+EMG control', 'EEG control only', 'location','NorthOutside','Orientation','horizontal');
+                         box_leg_pos = get(box_leg,'position');                        
+                         set(box_leg,'position',[0.225, 0.95, box_leg_pos(3:4)]);
+             
+             %annotation('textbox',[0,0,0.1,0.1],'String','*p < 0.05; **p < 0.01','LineWidth',0);             
+                
+             %print -dtiff -r450 PLSH_block_accuracy_modified.tif
+             %saveas(gca,'PLSH_block_accuracy_modified.fig')
+
+             % Expand axes to fill figure
+%             fig = gcf;
+%             style = hgexport('factorystyle');
+%             style.Bounds = 'tight';
+%             hgexport(fig,'-clipboard',style,'applystyle', true);
+%             drawnow;
+            
+            response = input('Save figure to folder [y/n]: ','s');
+            if strcmp(response,'y')
+                 tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_tpr_fpr_new.tif'];
+                 fig_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_tpr_fpr_new.fig'];
+                print('-dtiff', '-r300', tiff_filename); 
+                saveas(gcf,fig_filename);
+            else
+                disp('Save figure aborted');
+            end
+
+end
+                    
+%% Plot performance for day 4 and day 5
+
+if plot_performance_day4_day5 == 1
+              
+            tpr_fpr_performance = [];
+            for subj_n = 1:4                 
+                for n = 1:length(Sess_nums)
+                    ses_n = Sess_nums(n);
+                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
+                    if ~exist(fileid,'file')
+                        continue
+                    end
+                    cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+                    
+                    unique_blocks = unique(cl_ses_data(:,1));
+                    for m = 1:length(unique_blocks)
+                        block_n = unique_blocks(m);
+                        load([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_block' num2str(block_n) '_closeloop_results.mat']);
+                        block_start_stop_index = find(marker_block(:,2) == 50);
+                        block_performance = cl_ses_data(cl_ses_data(:,1) == block_n,:);
+                                               
+                        ind_valid_trials = find(block_performance(:,4) == 1);  % col 4 - Valid(1) or Catch(2)
+                        ind_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); % col 5 - Intent detected
+                        block_TPR = length(ind_success_valid_trials)/length(ind_valid_trials);      % TPR
+
+                        ind_catch_trials = find(block_performance(:,4) == 2);
+                        ind_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+                        block_FPR = length(ind_failed_catch_trials)/length(ind_catch_trials); %FPR
+
+                        ind_eeg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,8) == 1)); % col 8 - EEG decisions
+                        ind_eeg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,8) == 1));
+                        EEG_TPR = length(ind_eeg_success_valid_trials)/length(ind_valid_trials);
+                        EEG_FPR = length(ind_eeg_failed_catch_trials)/length(ind_catch_trials);
+
+                        % Correction: Use col 5 - Intent detected instead of col 9 - EEG+EMG decisions
+                        ind_eeg_emg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); 
+                        ind_eeg_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+                        EEG_EMG_TPR = length(ind_eeg_emg_success_valid_trials)/length(ind_valid_trials);
+                        EEG_EMG_FPR = length(ind_eeg_emg_failed_catch_trials)/length(ind_catch_trials);
+
+                        tpr_fpr_performance = [tpr_fpr_performance;...
+                                            [subj_n ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR]];                       
+                    end % ends block_n loop
+                end % ends ses_n loop               
+            end % ends subj_n loop
+
+                    %        1          2                 3                 4                 5               6                     7                          8                             9
+                    % [subj_n  ses_n       block_n block_TPR block_FPR EEG_TPR      EEG_FPR        EEG_EMG_TPR     EEG_EMG_FPR
+                                         
+                    figure('Position',[100 1100 3.5*116 3.5*116]);     % [left bottom width height]
+                    T_plot = tight_subplot(1,2,[0.01 0.05],[0.01 0.25],[0.05 0.01]);
+                   
+                    for perf = 8:9
+                        Ses4_perf =  tpr_fpr_performance((tpr_fpr_performance(:,2) == 4),[1, perf]);        % EEG_EMG_TPR or FPR
+                        Ses4_perf = [Ses4_perf; [5*ones(size(Ses4_perf,1),1) Ses4_perf(:,2)]];
+                        Ses5_perf =  tpr_fpr_performance((tpr_fpr_performance(:,2) == 5),[1, perf]);        % EEG_EMG_TPR or FPR
+                        Ses5_perf = [Ses5_perf; [5*ones(size(Ses5_perf,1),1) Ses5_perf(:,2)]];
+                        
+                        
+                        axes(T_plot(perf-7)); 
+                        hold on;
+                        hbox1_axes = boxplot(100.*Ses5_perf(:,2), Ses5_perf(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                 'positions',[1.15 2.15 3.15 4.15 5.15]); % symbol - Outliers take same color as box
+                        set(hbox1_axes,'LineWidth',1);
+                        set(gca,'XtickLabel',{' '});
+                        set(hbox1_axes(7,1:5),'MarkerFaceColor',[0.6 0.6 0.6])
+                        set(hbox1_axes(7,1:5),'MarkerSize',4);
+                        set(hbox1_axes(6,1:5),'Color','k');
+                        set(hbox1_axes(5,1:5),'Color','k');
+                        set(hbox1_axes([1 2],1:5),'LineStyle','-');
+                                              
+                        
+                        h_colors = findobj(gca,'Tag','Box');
+                        for j = 1:length(h_colors)
+                            h_patch(j) = patch(get(h_colors(j),'XData'), get(h_colors(j),'YData'),[0.6 0.6 0.6]);
+                        end
+                        hbox2_axes = boxplot(100.*Ses4_perf(:,2), Ses4_perf(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
+                                                                                                                                 'positions',[0.85 1.85 2.85 3.85 4.85]); % symbol - Outliers take same color as box
+                        set(hbox2_axes,'LineWidth',1);                   
+                        set(hbox2_axes(7,1:5),'MarkerSize',4);
+                        set(gca,'XtickLabel',{' '});
+                        set(hbox2_axes(6,1:5),'Color','k');
+                        set(hbox2_axes(5,1:5),'Color','k');
+                        set(hbox2_axes([1 2],1:5),'LineStyle','-');
+                        
+                        h_colors_w = findobj(gca,'Tag','Box');
+                        for j = 1:1 %length(h_colors_w)
+                            h_patch_w = patch(get(h_colors_w(j),'XData'), get(h_colors_w(j),'YData'),[1 1 1]);
+                        end
+                        
+                        h_axes = gca;                            
+                        axis(h_axes,[0.5 5.5 -10  115]);
+                        set(h_axes,'YGrid','on')
+                        set(h_axes,'YTick',[0 25 50 75 100]);
+                        set(h_axes,'Xtick',[(0.85 + 1.15)/2 (1.85 + 2.15)/2 (2.85 + 3.15)/2 (3.85 + 4.15)/2 (4.85 + 5.15)/2]);
+                                                
+                        if perf == 8
+                            title(h_axes,'True Positives (%)');
+                            set(h_axes,'XtickLabel',{'S1', 'S2', 'S3', 'S4','All','FontSize',9});
+                            set(h_axes,'YTickLabel',{'0' '25' '50' '75' '100'},'FontSize',9,'YColor','k');
+                        else
+                            title(h_axes,'False Positives (%)');
+                            set(h_axes,'XtickLabel',{'S1', 'S2', 'S3', 'S4','All'},'FontSize',9);
+                            set(h_axes,'YTickLabel',{' '},'FontSize',9,'YColor','k');
+                        end
+                        %ylabel(h_axes,'Performance ');
+                        set(h_axes,'Box','on')
+                        hxlab = xlabel(gca,{' ';'Subjects'});
+                        %pos_hxlab = get(hxlab,'Position');
+                        %set(hxlab,'Position',[pos_hxlab(1) (pos_hxlab(2) - 3) pos_hxlab(3)]);
+                        
+                        % Significance tests
+                    	p_values = [];
+                        for subj_n = 1:5
+                            % both-tailed Wilcoxon Rank sum Test, i.e. median(day 4) >< median(day 5)
+                            [pwilcoxon,h,stats] = ranksum(Ses4_perf((Ses4_perf(:,1) == subj_n),2),Ses5_perf((Ses5_perf(:,1) == subj_n),2),'alpha',0.05,'tail','both');
+                            if (pwilcoxon <= 0.05) && (pwilcoxon > 0.01) 
+                                p_values = [p_values 0.05];
+                            elseif (pwilcoxon <= 0.01)
+                                p_values = [p_values 0.01];
+                            else
+                                p_values = [p_values NaN];
+                            end
+                        end
+                        sigstar({[0.85 1.15],[1.85 2.15], [2.85 3.15], [3.85 4.15],[4.85 5.15]},p_values);
+                            
+                    end
+                         axes_pos = get(gca,'Position');    % [left bottom width height]
+                         box_leg = legend([h_patch_w h_patch(4)],'Day 4', 'Day 5', 'location','NorthOutside','Orientation','horizontal');
+                         box_leg_pos = get(box_leg,'position');       
+                         box_leg_title = get(box_leg,'title');
+                         set(box_leg_title,'String','Closed-loop EEG control with EMG gating');
+                         set(box_leg,'FontSize',9,'box','on');
+                         set(box_leg,'position',[0.275, 0.85, box_leg_pos(3:4)]);
+             
+             
+            response = input('Save figure to folder [y/n]: ','s');
+            if strcmp(response,'y')
+            %     tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_day4_day5.tif'];
+            %    fig_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\all_subjects_day4_day5.fig'];
+            %    print('-dtiff', '-r600', tiff_filename); 
+            %    saveas(gcf,fig_filename);
+            else
+                disp('Save figure aborted');
+            end
+
+end    
+
+%% Plotting features vs Intents/min
+
+if compare_closed_loop_features == 1
+                figure('Position',[1000 1400 6*116 4*116]);
+                T_plot = tight_subplot(2,4,[0.15 0.05],[0.1 0.1],[0.1 0.01]);
+                subj_n = 3;
+                for n = 1:length(Sess_nums)
+                    ses_n = Sess_nums(n);
+                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
+                    if ~exist(fileid,'file')
+                        continue
+                    end
+                    cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1);               
+                                           
+                    ind_success_valid_trials = find((cl_ses_data(:,4) == 1) & (cl_ses_data(:,5) == 1)); % col 4 - Valid(1) or Catch(2), col 5 - Intent detected,                
+                    Ses_Intent_per_min{n} = 60./cl_ses_data(ind_success_valid_trials,6);                        % col 6 - Time to trigger
+                    Ses_features{n} = cl_ses_data(ind_success_valid_trials,10:13);       % [slope, -ve peak, area, mahalanobis]
+                    likert_score{n} = cl_ses_data(ind_success_valid_trials,17);
+                end
+                                           
+                    grouping_vector = [ones(size(Ses_Intent_per_min{1},1),1); 2*ones(size(Ses_Intent_per_min{2},1),1)];
+                    combined_likert_score = [likert_score{1};likert_score{2}];
+                    combined_group = [(11:15)';(21:25)'; grouping_vector*10 + combined_likert_score];
+                    %combined_likert_score(combined_likert_score == 2) = 1;
+                    %combined_likert_score(combined_likert_score == 4) = 5;
+                    unique(combined_likert_score)
+                    length_ses4 = size(Ses_Intent_per_min{1},1);
+                    length_ses5 = size(Ses_Intent_per_min{2},1);
+                    Combined_intent_per_min = [Ses_Intent_per_min{1};Ses_Intent_per_min{2}];
+                    Combined_features_vectors = [Ses_features{1}(:,:); Ses_features{2}(:,:)];
+                    
+                               
+                    %% plot 1
+                    axes(T_plot(1)); hold on;
+                    feature_to_plot = 1;
+                    if plot_with_likert == 1
+                        hscatter_1 = gscatter([100*ones(10,1);Combined_features_vectors(:,feature_to_plot)],[100*ones(10,1);Combined_intent_per_min],...
+                                                               combined_group,'rymkbrymkb','oooooxxxxx',[],'off','Slope','Intents per min');
+                    else
+                         hscatter_1 = gscatter(Combined_features_vectors(:,feature_to_plot),Combined_intent_per_min,...
+                                                               grouping_vector,'rb','ox',[],'off','Slope','Intents per min');
+                    end
+                    set(hscatter_1(1:size(hscatter_1,1)),'MarkerSize',6);%set(hscatter_1(2),'MarkerSize',3);
+                    
+                    hparent = get(hscatter_1(1),'parent');
+                    xlim([floor(mean(Combined_features_vectors(:,feature_to_plot))-2*std(Combined_features_vectors(:,feature_to_plot))), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);
+                    ylim([floor(0), ceil(mean(Combined_intent_per_min)+2*std(Combined_intent_per_min))]);
+                    if subj_n == 3
+                        ylim([0 100]);
+                    end
+                    xlim_val = xlim;
+                    ylim_val = ylim;
+                    set(hparent,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[ylim_val(1) mean(ylim_val) ylim_val(2)],'YtickLabel',{num2str(ylim_val(1)) num2str(mean(ylim_val)) num2str(ylim_val(2))});  
+                    set(gca,'FontSize',paper_font_size-1);                   
+                    if plot_with_likert == 1
+                        legendflex([hscatter_1(4), hscatter_1(9)],{'Day 4','Day 5'},'ncol',2, 'ref',T_plot(1),'anchor',[1 7],'buffer',[0 5],'box','on','xscale',0.3,'padding',[0 5 5]);
+                        legendflex([hscatter_1(1:5)],{'1','2','3','4','5'},'ncol',5,'nrow',1','ref',T_plot(4),'anchor',[3 5],'buffer',[0 5],'box','on','xscale',0.3,'padding',[0 5 5],'title','Likert scores');
+                    else
+                        legendflex([hscatter_1(1), hscatter_1(2)],{'Day 4','Day 5'},'ncol',2, 'ref',T_plot(1),'anchor',[1 7],'buffer',[0 5],'box','on','xscale',0.3,'padding',[0 5 5]);
+                    end
+                   
+                   %% plot 2
+                    axes(T_plot(2)); hold on;
+                    feature_to_plot = 4;
+                    if plot_with_likert == 1
+                        hscatter_2 = gscatter([100*ones(10,1);Combined_features_vectors(:,feature_to_plot)],[100*ones(10,1);Combined_intent_per_min],...
+                                                                combined_group,'rymkbrymkb','oooooxxxxx',[],'off','Mahalanobis',' ');
+                    else
+                        hscatter_2 = gscatter(Combined_features_vectors(:,feature_to_plot),Combined_intent_per_min,...
+                                                               grouping_vector,[[1 0 0];[0 0 1]],'ox',[],'off','Mahalanobis', ' ');
+                    end
+                    set(hscatter_2(1:size(hscatter_2,1)),'MarkerSize',6);%set(hscatter_1(2),'MarkerSize',3);
+                    hparent = get(hscatter_2(1),'parent');
+                    xlim([floor(0), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);        
+                    ylim([floor(0), ceil(mean(Combined_intent_per_min)+2*std(Combined_intent_per_min))]);
+                    xlim_val = xlim;
+                    ylim_val = ylim;
+                    if subj_n == 3
+                        ylim([0 100]);
+                    end
+                    set(hparent,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[ylim_val(1) mean(ylim_val) ylim_val(2)],'YtickLabel',{' '});  
+                   set(gca,'FontSize',paper_font_size-1,'XDir','normal');
+                    
+                   %% plot 3
+                    axes(T_plot(3)); hold on;
+                    feature_to_plot = 2;
+                    if plot_with_likert == 1
+                        hscatter_3 = gscatter([100*ones(10,1);Combined_features_vectors(:,feature_to_plot)],[100*ones(10,1);Combined_intent_per_min],...
+                                                                combined_group,'rymkbrymkb','oooooxxxxx',[],'off','-ve Peak',' ');
+                    else
+                        hscatter_3 = gscatter(Combined_features_vectors(:,feature_to_plot),Combined_intent_per_min,...
+                                                                grouping_vector,[[1 0 0];[0 0 1]],'ox',[],'off','-ve Peak', ' ');
+                    end
+
+                    set(hscatter_3(1:size(hscatter_3,1)),'MarkerSize',6);%set(hscatter_1(2),'MarkerSize',3);
+                    hparent = get(hscatter_3(1),'parent');
+                    xlim([floor(mean(Combined_features_vectors(:,feature_to_plot))-2*std(Combined_features_vectors(:,feature_to_plot))), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);
+                    ylim([floor(0), ceil(mean(Combined_intent_per_min)+2*std(Combined_intent_per_min))]);
+                    xlim_val = xlim;
+                    ylim_val = ylim;
+                    if subj_n == 3
+                        ylim([0 100]);
+                    end
+                    set(hparent,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[ylim_val(1) mean(ylim_val) ylim_val(2)],'YtickLabel',{' '});  
+                   set(gca,'FontSize',paper_font_size-1);    
+                    
+                   %% plot 4
+                   axes(T_plot(4)); hold on;
+                    feature_to_plot = 3;
+                    if plot_with_likert == 1
+                        hscatter_4 = gscatter([100*ones(10,1);Combined_features_vectors(:,feature_to_plot)],[100*ones(10,1);Combined_intent_per_min],...
+                                                                combined_group,'rymkbrymkb','oooooxxxxx',[],'off','Area',' ');
+                    else
+                        hscatter_4 = gscatter(Combined_features_vectors(:,feature_to_plot),Combined_intent_per_min,...
+                                                                grouping_vector,[[1 0 0];[0 0 1]],'ox',[],'off','Area', ' ');                                         
+                    end
+                    set(hscatter_4(1:size(hscatter_4,1)),'MarkerSize',4);%set(hscatter_1(2),'MarkerSize',3);
+                    hparent = get(hscatter_4(1),'parent');
+                    xlim([floor(mean(Combined_features_vectors(:,feature_to_plot))-2*std(Combined_features_vectors(:,feature_to_plot))), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);
+                    ylim([floor(0), ceil(mean(Combined_intent_per_min)+2*std(Combined_intent_per_min))]);
+                    xlim_val = xlim;
+                    ylim_val = ylim;
+                    if subj_n == 3
+                        ylim([0 100]);
+                    end
+                    set(hparent,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[ylim_val(1) mean(ylim_val) ylim_val(2)],'YtickLabel',{' '});  
+                   set(gca,'FontSize',paper_font_size-1);  
+                    
+                    %% plot 5
+                    axes(T_plot(5));
+                    feature_to_plot = 1;
+                    [f_s4,x_s4] = hist(Combined_features_vectors(1:length_ses4,feature_to_plot),20);
+                    [f_s5,x_s5] = hist(Combined_features_vectors(length_ses4+1:length_ses4+length_ses5,feature_to_plot),20);
+                    h_patch(1) = jbfill(x_s4,f_s4./trapz(x_s4,f_s4), zeros(1,20),'r','r',1,0.5);
+                    h_patch(2) = jbfill(x_s5,f_s5./trapz(x_s5,f_s5), zeros(1,20),'b','b',1,0.5);
+                   xlim([floor(mean(Combined_features_vectors(:,feature_to_plot))-2*std(Combined_features_vectors(:,feature_to_plot))), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);
+                    xlim_val = xlim;
+                    ylim([0 1]);
+                    set(gca,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[0 0.5 1],'YtickLabel',{'0' '0.5' '1'});  
+                    xlabel('Slope','FontSize',paper_font_size-1); ylabel('PDF','FontSize',paper_font_size - 1);
+
+                    [legend_h,object_h,plot_h,text_str] = ...
+                        legendflex([h_patch(1), h_patch(2)],{'Day 4','Day 5'},'ncol',2, 'ref',T_plot(5),...
+                                            'anchor',[1 7],'buffer',[0 0],'box','off','xscale',0.3,'padding',[0 5 5]);
+                        set(object_h(3),'FaceAlpha',0.5);
+                        set(object_h(4),'FaceAlpha',0.5);
+    
+                    %% plot 6
+                    axes(T_plot(6));
+                    feature_to_plot = 4;
+                    [f_s4,x_s4] = hist(Combined_features_vectors(1:length_ses4,feature_to_plot),20);
+                    [f_s5,x_s5] = hist(Combined_features_vectors(length_ses4+1:length_ses4+length_ses5,feature_to_plot),20);
+                    jbfill(x_s4,f_s4./trapz(x_s4,f_s4), zeros(1,20),'r','r',1,0.5);
+                    jbfill(x_s5,f_s5./trapz(x_s5,f_s5), zeros(1,20),'b','b',1,0.5);
+                   xlim([floor(0), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);
+                    xlim_val = xlim;
+                    ylim([0 1]);
+                    set(gca,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[0 0.5 1],'YtickLabel',{' '});  
+                    xlabel('Mahalanobis','FontSize',paper_font_size-1); %ylabel('PDF','FontSize',paper_font_size - 1);
+                    set(gca,'XDir','normal');
+                    
+                    %% plot 7
+                    axes(T_plot(7));
+                    feature_to_plot = 2;
+                    [f_s4,x_s4] = hist(Combined_features_vectors(1:length_ses4,feature_to_plot),20);
+                    [f_s5,x_s5] = hist(Combined_features_vectors(length_ses4+1:length_ses4+length_ses5,feature_to_plot),20);
+                    jbfill(x_s4,f_s4./trapz(x_s4,f_s4), zeros(1,20),'r','r',1,0.5);
+                    jbfill(x_s5,f_s5./trapz(x_s5,f_s5), zeros(1,20),'b','b',1,0.5);
+                   xlim([floor(mean(Combined_features_vectors(:,feature_to_plot))-2*std(Combined_features_vectors(:,feature_to_plot))), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);
+                    xlim_val = xlim;
+                    ylim([0 1]);
+                    set(gca,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[0 0.5 1],'YtickLabel',{' '});  
+                    xlabel('-ve Peak','FontSize',paper_font_size-1); %ylabel('PDF','FontSize',paper_font_size - 1);
+                    
+                    %% plot 8
+                    axes(T_plot(8));
+                    feature_to_plot = 3;
+                    [f_s4,x_s4] = hist(Combined_features_vectors(1:length_ses4,feature_to_plot),20);
+                    [f_s5,x_s5] = hist(Combined_features_vectors(length_ses4+1:length_ses4+length_ses5,feature_to_plot),20);
+                    jbfill(x_s4,f_s4./trapz(x_s4,f_s4), zeros(1,20),'r','r',1,0.5);
+                    jbfill(x_s5,f_s5./trapz(x_s5,f_s5), zeros(1,20),'b','b',1,0.5);
+                   xlim([floor(mean(Combined_features_vectors(:,feature_to_plot))-2*std(Combined_features_vectors(:,feature_to_plot))), ...
+                                ceil(mean(Combined_features_vectors(:,feature_to_plot))+2*std(Combined_features_vectors(:,feature_to_plot)))]);
+                    xlim_val = xlim;
+                    ylim([0 1]);
+                    set(gca,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[0 0.5 1],'YtickLabel',{' '});  
+                    xlabel('Area','FontSize',paper_font_size-1); %ylabel('PDF','FontSize',paper_font_size - 1);
                     
                     
+                    mtit(['Subject S' num2str(subj_n)],'fontsize',paper_font_size-1,'xoff',0.0,'yoff',-0.06);
+                    fig = gcf;
+                    style = hgexport('factorystyle');
+                    style.Bounds = 'tight';
+                    hgexport(fig,'-clipboard',style,'applystyle', true);
+                    drawnow;
+
+                    response = input('Save figure to folder [y/n]: ','s');
+                    if strcmp(response,'y')
+                        if plot_with_likert == 1
+                            tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\' Subject_names{subj_n} '_compare_modes_likert.tif'];
+                        else
+                            tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\' Subject_names{subj_n} '_compare_modes.tif'];
+                        end
+                         print('-dtiff', '-r600', tiff_filename); 
+                    else
+                        disp('Save figure aborted');
+                    end
                     
+                    %% plot 9 - Feature space combining day 4 and 5
+                     if plot_with_likert == 1                    
+                        figure('Position',[1000 1400 6*116 4*116]);
+                     else
+                        figure('Position',[1000 1400 3.5*116 2*116]);
+                     end
+                    U_plot = tight_subplot(1,2,[0.1 0.15],[0.2 0.2],[0.15 0.01]);
+                    
+                    axes(U_plot(1)); hold on;
+                    features_to_plot = [1 4];
+                    total_intent_min = [100*ones(10,1);Combined_intent_per_min];
+                    if plot_with_likert == 1  
+                        fscatter_1 = gscatter([100*ones(10,1);Combined_features_vectors(:,features_to_plot(1))],[100*ones(10,1);Combined_features_vectors(:,features_to_plot(2))],...
+                                                                combined_group,'rymkbrymkb','oooooxxxxx',[],'off',features_names{features_to_plot(1)},features_names{features_to_plot(2)});    
+                    else
+                        fscatter_1 = gscatter(Combined_features_vectors(:,features_to_plot(1)),Combined_features_vectors(:,features_to_plot(2)),...
+                                                                grouping_vector,[[1 0 0];[0 0 1]],'ox',[],'off',features_names{features_to_plot(1)},features_names{features_to_plot(2)});     
+                    end                                       
+                    set(fscatter_1(1:length(fscatter_1)),'MarkerSize',5); 
+                    hparent = get(fscatter_1(1),'parent');
+                    xlim([floor(mean(Combined_features_vectors(:,features_to_plot(1)))-2*std(Combined_features_vectors(:,features_to_plot(1)))), ...
+                                ceil(mean(Combined_features_vectors(:,features_to_plot(1)))+2*std(Combined_features_vectors(:,features_to_plot(1))))]);
+                    ylim([floor(0),...
+                                ceil(mean(Combined_features_vectors(:,features_to_plot(2)))+2*std(Combined_features_vectors(:,features_to_plot(2))))]);
+                    xlim_val = xlim;
+                    ylim_val = ylim;
+                    set(hparent,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[ylim_val(1) mean(ylim_val) ylim_val(2)],'YtickLabel',{num2str(ylim_val(1)) num2str(mean(ylim_val)) num2str(ylim_val(2))});  
+                    set(gca,'FontSize',paper_font_size-1);                                     
+                    
+                    if plot_with_likert == 1
+                        gu = unique(combined_group);
+                        for k = 1:numel(gu)
+                              set(fscatter_1(k), 'ZData', total_intent_min( combined_group == gu(k) ));
+                        end
+                        view(3);                            
+                        zlim([floor(0), ceil(mean(Combined_intent_per_min)+2*std(Combined_intent_per_min))]);
+                        zlabel('Intents per min','FontSize',paper_font_size-1);
+                         legendflex([fscatter_1(4), fscatter_1(9)],{'Day 4','Day 5'},'ncol',2, 'ref',U_plot(1),'anchor',[1 7],'buffer',[0 5],'box','on','xscale',0.3,'padding',[0 5 5]);
+                         legendflex([fscatter_1(1:5)],{'1','2','3','4','5'},'ncol',5,'nrow',1','ref',U_plot(2),'anchor',[3 5],'buffer',[0 5],'box','on','xscale',0.3,'padding',[0 5 5],'title','Likert scores');
+                    else
+                        legendflex([fscatter_1(1), fscatter_1(2)],{'Day 4','Day 5'},'ncol',2, 'ref',U_plot(1),'anchor',[1 7],'buffer',[0 5],'box','on','xscale',0.3,'padding',[0 5 5]);   
+                    end
+                    %% plot 10                   
+                    axes(U_plot(2)); hold on;
+                    features_to_plot = [2 3];
+                    if plot_with_likert == 1
+                         fscatter_2 = gscatter([100*ones(10,1);Combined_features_vectors(:,features_to_plot(1))],[100*ones(10,1);Combined_features_vectors(:,features_to_plot(2))],...
+                                                            combined_group,'rymkbrymkb','oooooxxxxx',[],'off',features_names{features_to_plot(1)},features_names{features_to_plot(2)});                    
+                    else
+                        fscatter_2 = gscatter(Combined_features_vectors(:,features_to_plot(1)),Combined_features_vectors(:,features_to_plot(2)),...
+                                                                grouping_vector,[[1 0 0];[0 0 1]],'ox',[],'off',features_names{features_to_plot(1)},features_names{features_to_plot(2)});     
+                    end         
+                   
+                    set(fscatter_2(1:length(fscatter_2)),'MarkerSize',5); %set(fscatter_2(2),'MarkerSize',4);
+                    
+                    hparent = get(fscatter_2(1),'parent');
+                    xlim([floor(mean(Combined_features_vectors(:,features_to_plot(1)))-2*std(Combined_features_vectors(:,features_to_plot(1)))), ...
+                                ceil(mean(Combined_features_vectors(:,features_to_plot(1)))+2*std(Combined_features_vectors(:,features_to_plot(1))))]);
+                    ylim([floor(mean(Combined_features_vectors(:,features_to_plot(2)))-2*std(Combined_features_vectors(:,features_to_plot(2)))), ...
+                                ceil(mean(Combined_features_vectors(:,features_to_plot(2)))+2*std(Combined_features_vectors(:,features_to_plot(2))))]);
+                    xlim_val = xlim;
+                    ylim_val = ylim;
+                    set(hparent,'XTick',[xlim_val(1) mean(xlim_val) xlim_val(2)],'XTickLabel',{num2str(xlim_val(1)) num2str(mean(xlim_val)) num2str(xlim_val(2))},...
+                        'Ytick',[ylim_val(1) mean(ylim_val) ylim_val(2)],'YtickLabel',{num2str(ylim_val(1)) num2str(mean(ylim_val)) num2str(ylim_val(2))});  
+                    set(gca,'FontSize',paper_font_size-1);                 
+                    if plot_with_likert == 1
+                         gu = unique(combined_group);
+                        for k = 1:numel(gu)
+                              set(fscatter_2(k), 'ZData', total_intent_min( combined_group == gu(k) ));
+                        end
+                        view(3);                            
+                        zlim([floor(0), ceil(mean(Combined_intent_per_min)+2*std(Combined_intent_per_min))]);
+                        zlabel('Intents per min','FontSize',paper_font_size-1);
+                    end
+                    
+                    mtit(['Subject S' num2str(subj_n)],'fontsize',paper_font_size-1,'xoff',0.0,'yoff',-0.06);
+                    fig = gcf;
+                    style = hgexport('factorystyle');
+                    style.Bounds = 'tight';
+                    hgexport(fig,'-clipboard',style,'applystyle', true);
+                    drawnow;
+
+                    response = input('Save figure to folder [y/n]: ','s');
+                    if strcmp(response,'y')
+                        if plot_with_likert == 1
+                            tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\' Subject_names{subj_n} '_compare_feature_space_likert.tif'];
+                        else
+                            tiff_filename = ['C:\NRI_BMI_Mahi_Project_files\Figures_for_paper\' Subject_names{subj_n} '_compare_feature_space.tif'];
+                        end
+                         print('-dtiff', '-r600', tiff_filename); 
+                    else
+                        disp('Save figure aborted');
+                    end
+               
+                    
+end
+
