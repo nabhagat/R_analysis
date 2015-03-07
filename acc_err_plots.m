@@ -2132,6 +2132,22 @@ if compare_closed_loop_features == 1
                     Combined_intent_per_min = [Ses_Intent_per_min{1};Ses_Intent_per_min{2}];
                     Combined_features_vectors = [Ses_features{1}(:,:); Ses_features{2}(:,:)];
                     
+                    [c1,ia1,ic1] = unique(likert_score{1});
+                    likert1_freq = [];
+                    for i = 1:numel(c1)
+                        likert1_freq = [likert1_freq length(find(likert_score{1} == c1(i)))];
+                    end
+                    
+                    [c2,ia2,ic2] = unique(likert_score{2});
+                    likert2_freq = [];
+                    for i = 1:numel(c2)
+                        likert2_freq = [likert2_freq length(find(likert_score{2} == c2(i)))];
+                    end
+                    
+                    display(['Likert Scores: Day 4 - ' num2str(c1') '; Day 5 -  ' num2str(c2')]);
+                    display(['Freq: Day 4 - ' num2str(likert1_freq) '; Day 5 -' num2str(likert2_freq)]);
+                    sum(likert1_freq)
+                    sum(likert2_freq)
                                
                     %% plot 1
                     axes(T_plot(1)); hold on;
