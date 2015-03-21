@@ -23,13 +23,13 @@ features_names = {'Slope','-ve Peak', 'Area', 'Mahalanobis'};
 plot_intent_fpr_min = 0;
 plot_num_attempts = 0;
 plot_different_metrics = 0;
-plot_intent_only = 0;
-plot_CoV = 0;
+plot_intent_only = 1;
+plot_CoV = 1;
 plot_tpr_fpr_comparison_old = 0;
 plot_tpr_fpr_comparison_new = 0;
 plot_performance_day4_day5 = 0;
-compare_closed_loop_features = 1;
-plot_with_likert =  1;
+compare_closed_loop_features = 0;
+plot_with_likert =  0;
 
 %%
 % figure();
@@ -141,7 +141,7 @@ if plot_intent_fpr_min == 1
                 for n = 1:length(Sess_nums)
                     Session_Intent_per_min = [];
                     ses_n = Sess_nums(n);
-                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
                     fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
                     if ~exist(fileid,'file')
                         continue
@@ -190,7 +190,7 @@ if plot_intent_fpr_min == 1
 
                     %        1          2               3                 4                 5               6                     7                          8                             9                                      10  
                     % [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR mean(Intent_per_min) std(Intent_per_min)]]
-
+    
                     plotids = find(bmi_performance(:,1) == ses_n);
                     switch ses_n
                         case 3 % Session 3                       
@@ -1164,12 +1164,27 @@ if plot_intent_only == 1
                 for n = 1:length(Sess_nums)
                     Session_Intent_per_min = [];
                     ses_n = Sess_nums(n);
-                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
                     fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
                     if ~exist(fileid,'file')
                         continue
                     end
                     cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+                    
+                    % Print out mean and sd for the likert scale for this
+                    % session and subject
+                    display(sprintf('S%d, Day %d, likert score = %.2f +/- %.2f\n',subj_n,ses_n,mean(cl_ses_data(:,17)),std(cl_ses_data(:,17))));
+                    if ses_n == 4
+                        if subj_n == 1
+                            likert_day4_all = [];
+                        end
+                        likert_day4_all = [likert_day4_all; cl_ses_data(:,17)];
+                    else
+                        if subj_n == 1
+                            likert_day5_all = [];
+                        end
+                        likert_day5_all = [likert_day5_all; cl_ses_data(:,17)];
+                    end
                     
                     unique_blocks = unique(cl_ses_data(:,1));
                     for m = 1:length(unique_blocks)
@@ -1248,7 +1263,7 @@ if plot_intent_only == 1
                             set([hbox_axes h_overall],'LineWidth',1);
                             axis(h_axes,[0 max_ses4+4 0  maxY_ranges(subj_n)]);
                             
-                            outlier_vals = unique(Session_Intent_per_min(Session_Intent_per_min(:,2) > maxY_ranges(subj_n),1))
+                            outlier_vals = unique(Session_Intent_per_min(Session_Intent_per_min(:,2) > maxY_ranges(subj_n),1));
                             if ~isempty(outlier_vals)
                                 [~,vals_loc,~] = intersect(unique_blocks,outlier_vals);
                                 if ((subj_n == 2) || (subj_n == 4))
@@ -1582,6 +1597,8 @@ if plot_intent_only == 1
 %                 disp('Save figure aborted');
 %             end
 
+display(sprintf('Overall likert score, Day 4 = %.3f +/- %.3f, Day 5 = %.3f +/- %.3f\n',...
+    mean(likert_day4_all),std(likert_day4_all),mean(likert_day5_all),std(likert_day5_all)));
 end
 
 %% Plot TPR FPR comparison  - OLD format                   
