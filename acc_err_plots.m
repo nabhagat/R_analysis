@@ -23,12 +23,12 @@ features_names = {'Slope','-ve Peak', 'Area', 'Mahalanobis'};
 plot_intent_fpr_min = 0;
 plot_num_attempts = 0;
 plot_different_metrics = 0;
-plot_intent_only = 1;
-plot_CoV = 1;
+plot_intent_only = 0;
+plot_CoV = 0;
 plot_tpr_fpr_comparison_old = 0;
 plot_tpr_fpr_comparison_new = 0;
 plot_performance_day4_day5 = 0;
-compare_closed_loop_features = 0;
+compare_closed_loop_features = 1;
 plot_with_likert =  0;
 
 %%
@@ -1157,7 +1157,7 @@ if plot_intent_only == 1
                 pos_p = get(gca,'Position'); 
                 set(gca,'Position',[pos_p(1) pos_p(2)-height_shift pos_p(3) pos_p(4)-height_shift]);   
             end
-           
+            all_subjects_bmi_performance = [];
             for subj_n = 1:4
                 bmi_performance = [];
                  
@@ -1574,7 +1574,7 @@ if plot_intent_only == 1
                 end
                 end % ends ses_n loop
 
-                
+            all_subjects_bmi_performance = [all_subjects_bmi_performance; bmi_performance];
             end % ends subj_n loop
              %print -dtiff -r450 PLSH_block_accuracy_modified.tif
              %saveas(gca,'PLSH_block_accuracy_modified.fig')
@@ -1597,8 +1597,8 @@ if plot_intent_only == 1
 %                 disp('Save figure aborted');
 %             end
 
-display(sprintf('Overall likert score, Day 4 = %.3f +/- %.3f, Day 5 = %.3f +/- %.3f\n',...
-    mean(likert_day4_all),std(likert_day4_all),mean(likert_day5_all),std(likert_day5_all)));
+    display(sprintf('Overall likert score, Day 4 = %.3f +/- %.3f, Day 5 = %.3f +/- %.3f\n',...
+        mean(likert_day4_all),std(likert_day4_all),mean(likert_day5_all),std(likert_day5_all)));
 end
 
 %% Plot TPR FPR comparison  - OLD format                   
@@ -1976,7 +1976,7 @@ if plot_performance_day4_day5 == 1
             for subj_n = 1:4                 
                 for n = 1:length(Sess_nums)
                     ses_n = Sess_nums(n);
-                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
                     fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
                     if ~exist(fileid,'file')
                         continue
@@ -2018,8 +2018,8 @@ if plot_performance_day4_day5 == 1
                     %        1          2                 3                 4                 5               6                     7                          8                             9
                     % [subj_n  ses_n       block_n block_TPR block_FPR EEG_TPR      EEG_FPR        EEG_EMG_TPR     EEG_EMG_FPR
                                          
-                    figure('Position',[100 1100 3.5*116 3.5*116]);     % [left bottom width height]
-                    T_plot = tight_subplot(1,2,[0.01 0.05],[0.01 0.25],[0.05 0.01]);
+                    figure('Position',[100 1500 3.5*116 3.5*116]);     % [left bottom width height]
+                    T_plot = tight_subplot(1,2,[0.01 0.05],[0.1 0.2],[0.05 0.01]);
                    
                     for perf = 8:9
                         Ses4_perf =  tpr_fpr_performance((tpr_fpr_performance(:,2) == 4),[1, perf]);        % EEG_EMG_TPR or FPR
@@ -2036,8 +2036,8 @@ if plot_performance_day4_day5 == 1
                         set(gca,'XtickLabel',{' '});
                         set(hbox1_axes(7,1:5),'MarkerFaceColor',[0.6 0.6 0.6])
                         set(hbox1_axes(7,1:5),'MarkerSize',4);
-                        set(hbox1_axes(6,1:5),'Color','k');
                         set(hbox1_axes(5,1:5),'Color','k');
+                        set(hbox1_axes(6,1:5),'Color','r','LineWidth',1.5);
                         set(hbox1_axes([1 2],1:5),'LineStyle','-');
                                               
                         
@@ -2050,8 +2050,8 @@ if plot_performance_day4_day5 == 1
                         set(hbox2_axes,'LineWidth',1);                   
                         set(hbox2_axes(7,1:5),'MarkerSize',4);
                         set(gca,'XtickLabel',{' '});
-                        set(hbox2_axes(6,1:5),'Color','k');
                         set(hbox2_axes(5,1:5),'Color','k');
+                        set(hbox2_axes(6,1:5),'Color','r','LineWidth',1.5);
                         set(hbox2_axes([1 2],1:5),'LineStyle','-');
                         
                         h_colors_w = findobj(gca,'Tag','Box');
@@ -2066,17 +2066,17 @@ if plot_performance_day4_day5 == 1
                         set(h_axes,'Xtick',[(0.85 + 1.15)/2 (1.85 + 2.15)/2 (2.85 + 3.15)/2 (3.85 + 4.15)/2 (4.85 + 5.15)/2]);
                                                 
                         if perf == 8
-                            title(h_axes,'True Positives (%)');
+                            title(h_axes,'TPR (%)');
                             set(h_axes,'XtickLabel',{'S1', 'S2', 'S3', 'S4','All','FontSize',9});
                             set(h_axes,'YTickLabel',{'0' '25' '50' '75' '100'},'FontSize',9,'YColor','k');
                         else
-                            title(h_axes,'False Positives (%)');
+                            title(h_axes,'FPR (%)');
                             set(h_axes,'XtickLabel',{'S1', 'S2', 'S3', 'S4','All'},'FontSize',9);
                             set(h_axes,'YTickLabel',{' '},'FontSize',9,'YColor','k');
                         end
                         %ylabel(h_axes,'Performance ');
                         set(h_axes,'Box','on')
-                        hxlab = xlabel(gca,{' ';'Subjects'});
+                        hxlab = xlabel(gca,{'\fontsize{9}Subjects'});
                         %pos_hxlab = get(hxlab,'Position');
                         %set(hxlab,'Position',[pos_hxlab(1) (pos_hxlab(2) - 3) pos_hxlab(3)]);
                         
@@ -2093,17 +2093,24 @@ if plot_performance_day4_day5 == 1
                                 p_values = [p_values NaN];
                             end
                         end
-                        sigstar({[0.85 1.15],[1.85 2.15], [2.85 3.15], [3.85 4.15],[4.85 5.15]},p_values);
+                        h_stars = sigstar({[0.85 1.15],[1.85 2.15], [2.85 3.15], [3.85 4.15],[4.85 5.15]},p_values);
+                        set(h_stars(:,1),'Color','k','Linewidth',1);
+                        %set(h_stars(2),'Color','b');
                             
                     end
                          axes_pos = get(gca,'Position');    % [left bottom width height]
-                         box_leg = legend([h_patch_w h_patch(4)],'Day 4', 'Day 5', 'location','NorthOutside','Orientation','horizontal');
-                         box_leg_pos = get(box_leg,'position');       
-                         box_leg_title = get(box_leg,'title');
-                         set(box_leg_title,'String','Closed-loop EEG control with EMG gating');
-                         set(box_leg,'FontSize',9,'box','on');
-                         set(box_leg,'position',[0.275, 0.85, box_leg_pos(3:4)]);
-             
+                         %box_leg = legend([h_patch_w h_patch(4)],'Day 4', 'Day 5', 'location','NorthOutside','Orientation','horizontal');
+                         %box_leg_pos = get(box_leg,'position');       
+                         %box_leg_title = get(box_leg,'title');
+                         %set(box_leg_title,'String','Closed-loop EEG control with EMG gating');
+                         %set(box_leg,'FontSize',9,'box','on');
+                         %set(box_leg,'position',[0.275, 0.85, box_leg_pos(3:4)]);
+                         [legend_h,object_h,plot_h,text_str] = ...
+                                        legendflex([h_patch_w, h_patch(4)],{'Day 4','Day 5'},'ncol',2, 'ref',gcf,...
+                                                            'anchor',{'n' 'n'},'buffer',[0 0],'box','off','xscale',0.3,...
+                                                            'title','Closed-loop EEG control with EMG gating','padding',[0 5 0]);
+                         
+                         annotation('textbox',[0 0 0.5 0.05],'String','*\itp\rm < 0.05, **\itp\rm < 0.01','EdgeColor','none','FontSize',9);
              
             response = input('Save figure to folder [y/n]: ','s');
             if strcmp(response,'y')
@@ -2122,10 +2129,10 @@ end
 if compare_closed_loop_features == 1
                 figure('Position',[1000 1400 6*116 4*116]);
                 T_plot = tight_subplot(2,4,[0.15 0.05],[0.1 0.1],[0.1 0.01]);
-                subj_n = 3;
+                subj_n = 4;
                 for n = 1:length(Sess_nums)
                     ses_n = Sess_nums(n);
-                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
+                    folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
                     fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
                     if ~exist(fileid,'file')
                         continue
