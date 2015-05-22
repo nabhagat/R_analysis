@@ -1,5 +1,5 @@
 % TNSRE Abstract Plots
-clear
+%clear
 mycolors_square = {'-rs','-bs','-ks','-gs','-bs'};
 mycolors_circle = {'-ro','-bo','-ko','-go','-bo'};
 myfacecolors = ['r','b','k','g','b'];
@@ -28,7 +28,8 @@ plot_CoV = 0;
 plot_tpr_fpr_comparison_old = 0;
 plot_tpr_fpr_comparison_new = 0;
 plot_performance_day4_day5 = 0;
-compare_closed_loop_features = 1;
+plot_performance_swapped_classifiers = 1;
+compare_closed_loop_features = 0;
 plot_with_likert =  0;
 
 %%
@@ -1158,6 +1159,7 @@ if plot_intent_only == 1
                 set(gca,'Position',[pos_p(1) pos_p(2)-height_shift pos_p(3) pos_p(4)-height_shift]);   
             end
             all_subjects_bmi_performance = [];
+            mean_intent_per_min = zeros(4,4);
             for subj_n = 1:4
                 bmi_performance = [];
                  
@@ -1222,7 +1224,8 @@ if plot_intent_only == 1
                         
                         Session_Intent_per_min = [Session_Intent_per_min; [block_n.*ones(length(Intent_per_min),1) Intent_per_min]];
                     end % ends block_n loop
-
+                    mean_intent_per_min(subj_n,2*n-1:2*n) = [mean(Session_Intent_per_min(:,2)), std(Session_Intent_per_min(:,2))];                    
+                        
                     %        1          2               3                 4                 5               6                     7                          8                             9                                      10                                11              ...               
                     % [ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR mean(Intent_per_min) std(Intent_per_min) block_duration ...  
                     %                    12                                              13                                           14
@@ -1293,18 +1296,18 @@ if plot_intent_only == 1
                                 case 1
                                     %title({'Day 4';'S1 (AT)'},'FontSize',paper_font_size-1);
                                     title({'Day 4'},'FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S1 (AT)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-6,'S1 (UT)','FontSize',paper_font_size-1);
                                     
                                 case 2
                                     %title('S2 (\bfBD\rm)','FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S2 (\bfBD\rm)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-4,'S2 (\bfUD\rm)','FontSize',paper_font_size-1);
                                     
                                 case 3
                                     %title('S3 (AT)','FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S3 (AT)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-5,'S3 (UT)','FontSize',paper_font_size-1);
                                 case 4
                                     %title('S4 (\bfBD\rm)','FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S4 (\bfBD\rm)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-5,'S4 (\bfUD\rm)','FontSize',paper_font_size-1);
                             end
                             h1 = ylabel(h_axes,{'Intents per';'min'},'FontSize',paper_font_size-1,'Rotation',90);
                             posy = get(h1,'Position');                          
@@ -1448,18 +1451,18 @@ if plot_intent_only == 1
                             switch subj_n
                                 case 1
                                     title({'Day 5'},'FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S1 (AT)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-6,'S1 (UT)','FontSize',paper_font_size-1);
                                     %h1 = ylabel(h_axes,{'Intents per';'min'},'FontSize',paper_font_size-1,'Rotation',90);
                                     %posy = get(h1,'Position');
                                 case 2
                                     %title('S2 (AT)','FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S2 (AT)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-4,'S2 (UT)','FontSize',paper_font_size-1);
                                 case 3
                                     %title('S3 (AT)','FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S3 (AT)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-5,'S3 (UT)','FontSize',paper_font_size-1);
                                 case 4
                                     %title('S4 (AT)','FontSize',paper_font_size-1);
-                                    text(0,maxY_ranges(subj_n)-5,'S4 (AT)','FontSize',paper_font_size-1);
+                                    %text(0,maxY_ranges(subj_n)-5,'S4 (UT)','FontSize',paper_font_size-1);
                             end
                             
                             %h1 = ylabel(h_axes,{'Intents per min'},'FontSize',paper_font_size-1,'Rotation',90);
@@ -1969,24 +1972,28 @@ if plot_tpr_fpr_comparison_new == 1
 end
                     
 %% Plot performance for day 4 and day 5
-
+subjects_order = [1 3 2 4]; 
+Subject_names_reordered = {'LSGR','ERWS','PLSH','BNBO'};
 if plot_performance_day4_day5 == 1
               
             tpr_fpr_performance = [];
-            for subj_n = 1:4                 
+            mean_sd_tpr_fpr_4_5 = zeros(4,8);
+            for subj_n = 1:4
                 for n = 1:length(Sess_nums)
                     ses_n = Sess_nums(n);
-                    folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
-                    fileid = [folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
+                    folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names_reordered{subj_n} '\' Subject_names_reordered{subj_n} '_Session' num2str(ses_n) '\'];
+                    fileid = [folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
                     if ~exist(fileid,'file')
                         continue
                     end
-                    cl_ses_data = dlmread([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+                    cl_ses_data = dlmread([folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+                    len_attempt_trials = length(find(cl_ses_data(:,4)== 1));
+                    len_catch_trials = length(find(cl_ses_data(:,4)== 2));
                     
                     unique_blocks = unique(cl_ses_data(:,1));
                     for m = 1:length(unique_blocks)
                         block_n = unique_blocks(m);
-                        load([folder_path Subject_names{subj_n} '_ses' num2str(ses_n) '_block' num2str(block_n) '_closeloop_results.mat']);
+                        load([folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_block' num2str(block_n) '_closeloop_results.mat']);
                         block_start_stop_index = find(marker_block(:,2) == 50);
                         block_performance = cl_ses_data(cl_ses_data(:,1) == block_n,:);
                                                
@@ -2012,12 +2019,18 @@ if plot_performance_day4_day5 == 1
                         tpr_fpr_performance = [tpr_fpr_performance;...
                                             [subj_n ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR]];                       
                     end % ends block_n loop
+                    mean_sd_tpr_fpr_4_5(subjects_order(subj_n),4*n-3:4*n) = ...
+                        [ mean(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),8)),...
+                          std(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),8)),...
+                          mean(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),9)),...
+                          std(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),9))];
                 end % ends ses_n loop               
             end % ends subj_n loop
 
+
                     %        1          2                 3                 4                 5               6                     7                          8                             9
                     % [subj_n  ses_n       block_n block_TPR block_FPR EEG_TPR      EEG_FPR        EEG_EMG_TPR     EEG_EMG_FPR
-                                         
+                                            
                     figure('Position',[100 1500 3.5*116 3.5*116]);     % [left bottom width height]
                     T_plot = tight_subplot(1,2,[0.01 0.05],[0.1 0.2],[0.05 0.01]);
                    
@@ -2031,7 +2044,7 @@ if plot_performance_day4_day5 == 1
                         axes(T_plot(perf-7)); 
                         hold on;
                         hbox1_axes = boxplot(100.*Ses5_perf(:,2), Ses5_perf(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
-                                                                                                                                 'positions',[1.15 2.15 3.15 4.15 5.15]); % symbol - Outliers take same color as box
+                                                                                                                                 'positions',[1.15 2.15 3.15+0.25 4.15+0.25 5.15+0.5]); % symbol - Outliers take same color as box
                         set(hbox1_axes,'LineWidth',1);
                         set(gca,'XtickLabel',{' '});
                         set(hbox1_axes(7,1:5),'MarkerFaceColor',[0.6 0.6 0.6])
@@ -2046,7 +2059,7 @@ if plot_performance_day4_day5 == 1
                             h_patch(j) = patch(get(h_colors(j),'XData'), get(h_colors(j),'YData'),[0.6 0.6 0.6]);
                         end
                         hbox2_axes = boxplot(100.*Ses4_perf(:,2), Ses4_perf(:,1),'plotstyle','traditional','widths',0.2,'labelorientation','horizontal','symbol','ko','colors','k',...
-                                                                                                                                 'positions',[0.85 1.85 2.85 3.85 4.85]); % symbol - Outliers take same color as box
+                                                                                                                                 'positions',[0.85 1.85 2.85+0.25 3.85+0.25 4.85+0.5]); % symbol - Outliers take same color as box
                         set(hbox2_axes,'LineWidth',1);                   
                         set(hbox2_axes(7,1:5),'MarkerSize',4);
                         set(gca,'XtickLabel',{' '});
@@ -2060,20 +2073,24 @@ if plot_performance_day4_day5 == 1
                         end
                         
                         h_axes = gca;                            
-                        axis(h_axes,[0.5 5.5 -10  115]);
+                        axis(h_axes,[0.5 6 -10  115]);
                         set(h_axes,'YGrid','on')
                         set(h_axes,'YTick',[0 25 50 75 100]);
-                        set(h_axes,'Xtick',[(0.85 + 1.15)/2 (1.85 + 2.15)/2 (2.85 + 3.15)/2 (3.85 + 4.15)/2 (4.85 + 5.15)/2]);
-                                                
+                        set(h_axes,'Xtick',[(0.85 + 1.15)/2 (1.85 + 2.15)/2 (2.85 + 3.15 +0.5)/2 (3.85 + 4.15 +0.5)/2 (4.85+5.15+1)/2]);
+                        line([(2+3.5)/2 (2+3.5)/2],[-10 115],'LineWidth',0.5,'Color','k','LineStyle','--');
+                        line([(4.25+5.5)/2 (4.25+5.5)/2],[-10 115],'LineWidth',0.5,'Color','k','LineStyle','--');
+                        
                         if perf == 8
                             title(h_axes,'TPR (%)');
-                            set(h_axes,'XtickLabel',{'S1', 'S2', 'S3', 'S4','All','FontSize',9});
+                            set(h_axes,'XtickLabel',{'S1', 'S3', 'S2', 'S4','All','FontSize',9});
                             set(h_axes,'YTickLabel',{'0' '25' '50' '75' '100'},'FontSize',9,'YColor','k');
                         else
                             title(h_axes,'FPR (%)');
-                            set(h_axes,'XtickLabel',{'S1', 'S2', 'S3', 'S4','All'},'FontSize',9);
+                            set(h_axes,'XtickLabel',{'S1', 'S3', 'S2', 'S4','All'},'FontSize',9);
                             set(h_axes,'YTickLabel',{' '},'FontSize',9,'YColor','k');
                         end
+                        %text(0.75,-5,'AT \rightarrow AT','FontSize',9)
+                        %text(3,0,'BD \rightarrow AT','FontSize',9)
                         %ylabel(h_axes,'Performance ');
                         set(h_axes,'Box','on')
                         hxlab = xlabel(gca,{'\fontsize{9}Subjects'});
@@ -2093,7 +2110,7 @@ if plot_performance_day4_day5 == 1
                                 p_values = [p_values NaN];
                             end
                         end
-                        h_stars = sigstar({[0.85 1.15],[1.85 2.15], [2.85 3.15], [3.85 4.15],[4.85 5.15]},p_values);
+                        h_stars = sigstar({[0.85 1.15],[1.85 2.15], [3.1 3.4], [4.1 4.4],[5.35 5.65]},p_values);
                         set(h_stars(:,1),'Color','k','Linewidth',1);
                         %set(h_stars(2),'Color','b');
                             
@@ -2462,3 +2479,112 @@ if compare_closed_loop_features == 1
                     
 end
 
+%% Plotting performance comparing BD vs AT
+subjects_order = [1 3 2 4]; 
+Subject_names_reordered = {'LSGR','ERWS','PLSH','BNBO'};
+
+if plot_performance_swapped_classifiers == 1
+    
+    sim_marker_block = marker_block;
+    trial_start_ind = find(sim_marker_block(:,2)==2);
+    trial_end_ind = find((sim_marker_block(:,2) == 100) | (sim_marker_block(:,2) == -1));
+    valid_intents = zeros(size(trial_start_ind));
+    orig_intents = zeros(size(trial_start_ind));
+    for i = 1:length(trial_start_ind)
+        intent = find(sim_marker_block(trial_start_ind(i)+1:trial_end_ind(i)-1,2) == 400,1);
+        if ~isempty(intent)
+            valid_intents(i) = double(sim_marker_block(trial_start_ind(i)+intent,1));
+        else
+            valid_intents(i) = -1;
+        end
+        if (sim_marker_block(trial_end_ind(i),2) == 100)
+            orig_intents(i) = double(sim_marker_block(trial_end_ind(i),1));
+        else
+            orig_intents(i) = -1;
+        end
+    end
+
+    tpr_fpr_performance = [];
+    for subj_n = 4:4
+        for n = 1:1 %length(Sess_nums)
+            ses_n = Sess_nums(n);
+            folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names_reordered{subj_n} '\' Subject_names_reordered{subj_n} '_Session' num2str(ses_n) '\'];
+            folder_path_sim = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names_reordered{subj_n} '\' Subject_names_reordered{subj_n} '_Session' num2str(ses_n) 'B\'];
+            fileid = [folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
+            if ~exist(fileid,'file')
+                continue
+            end
+            cl_ses_data = dlmread([folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+
+            unique_blocks = unique(cl_ses_data(:,1));
+            for m = 2:2 %length(unique_blocks)
+                block_n = unique_blocks(m);
+                %load([folder_path_sim Subject_names_reordered{subj_n} '_ses' num2str(ses_n) 'B_block' num2str(block_n) '_closeloop_results.mat'],'marker_block');
+                block_start_stop_index = find(marker_block(:,2) == 50);
+                if length(block_start_stop_index) > 2
+                    marker_block(block_start_stop_index(3)+1:end,:) = [];
+                end
+                block_performance = cl_ses_data(cl_ses_data(:,1) == block_n,:);
+                %sim_trial_start_ind = find(marker_block(:,2) == 2);
+                %sim_trial_end_ind = find((marker_block(:,2) == 100) | (marker_block(:,2) == -1));
+
+                ind_valid_trials = find(block_performance(:,4) == 1);  % col 4 - Valid(1) or Catch(2)
+                ind_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); % col 5 - Intent detected
+                block_TPR = length(ind_success_valid_trials)/length(ind_valid_trials);      % TPR
+                
+                %sim_valid_trial_start_ind = sim_trial_start_ind(ind_valid_trials);
+                %sim_valid_trial_end_ind = sim_trial_end_ind(ind_valid_trials);
+                %sim_success_valid_trials = [];
+                orig_success_valid_trials = [];
+                for i = 1:length(sim_valid_trial_start_ind)
+                     GO_detected = find(marker_block(sim_valid_trial_start_ind(i):sim_valid_trial_end_ind(i),2) == 400,1,'first');
+                     orig_GO_detect = find(marker_block(sim_valid_trial_start_ind(i):sim_valid_trial_end_ind(i),2) == 100,1,'first');
+                     if ~isempty(GO_detected)
+                         sim_success_valid_trials = [sim_success_valid_trials; (sim_valid_trial_start_ind(i)+ GO_detected-1)];
+                     end
+                     if ~isempty(orig_GO_detect)
+                         orig_success_valid_trials = [orig_success_valid_trials; (sim_valid_trial_start_ind(i)+ orig_GO_detect-1)];
+                     end
+                end
+                sim_block_TPR = length(sim_success_valid_trials)/length(sim_valid_trial_start_ind);
+                orig_block_TPR = length(orig_success_valid_trials)/length(sim_valid_trial_start_ind);
+                
+                ind_catch_trials = find(block_performance(:,4) == 2);
+                ind_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+                block_FPR = length(ind_failed_catch_trials)/length(ind_catch_trials); %FPR
+                
+                sim_catch_trial_start_ind = sim_trial_start_ind(ind_catch_trials);
+                sim_catch_trial_end_ind = sim_trial_end_ind(ind_catch_trials);
+                sim_catch_valid_trials = [];
+                orig_catch_valid_trials = [];
+                for i = 1:length(sim_catch_trial_start_ind)
+                     GO_detected = find(marker_block(sim_catch_trial_start_ind(i):sim_catch_trial_end_ind(i),2) == 400,1,'first');
+                     orig_GO_detect = find(marker_block(sim_catch_trial_start_ind(i):sim_catch_trial_end_ind(i),2) == 100,1,'first');
+                     if ~isempty(GO_detected)
+                         sim_catch_valid_trials = [sim_catch_valid_trials; (sim_catch_trial_start_ind(i)+ GO_detected-1)];
+                     end
+                     if ~isempty(orig_GO_detect)
+                         orig_catch_valid_trials = [orig_catch_valid_trials; (sim_catch_trial_start_ind(i)+ orig_GO_detect-1)];
+                     end
+                end
+                sim_block_FPR = length(sim_catch_valid_trials)/length(sim_catch_trial_start_ind);
+                orig_block_FPR = length(orig_catch_valid_trials)/length(sim_catch_trial_start_ind);
+
+                %ind_eeg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,8) == 1)); % col 8 - EEG decisions
+                %ind_eeg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,8) == 1));
+                %EEG_TPR = length(ind_eeg_success_valid_trials)/length(ind_valid_trials);
+                %EEG_FPR = length(ind_eeg_failed_catch_trials)/length(ind_catch_trials);
+
+                % Correction: Use col 5 - Intent detected instead of col 9 - EEG+EMG decisions
+%                 ind_eeg_emg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,5) == 1)); 
+%                 ind_eeg_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
+%                 EEG_EMG_TPR = length(ind_eeg_emg_success_valid_trials)/length(ind_valid_trials);
+%                 EEG_EMG_FPR = length(ind_eeg_emg_failed_catch_trials)/length(ind_catch_trials);
+
+                tpr_fpr_performance = [tpr_fpr_performance;...
+                                    [subj_n ses_n block_n block_TPR block_FPR orig_block_TPR orig_block_FPR sim_block_TPR sim_block_FPR]];                       
+            end % ends block_n loop
+        end % ends ses_n loop               
+    end % ends subj_n loop
+    disp(tpr_fpr_performance);
+end
