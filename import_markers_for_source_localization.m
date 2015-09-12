@@ -91,7 +91,7 @@ for m = 1:length(unique_blocks)
     
     EEG.setname=[Subject_name '_ses' num2str(closeloop_Sess_num) '_closeloop_block' num2str(closeloop_Block_num) '_eeg_raw'];
     EEG = eeg_checkset( EEG );
-    EEG=pop_chanedit(EEG, 'lookup','C:\\Program Files\\MATLAB\\R2013a\\toolbox\\eeglab\\plugins\\dipfit2.2\\standard_BESA\\standard-10-5-cap385.elp');
+    EEG=pop_chanedit(EEG, 'lookup','C:\NRI_BMI_Mahi_Project_files\EEGLAB_13_1_1b\eeglab13_1_1b\plugins\dipfit2.2\standard_BESA\standard-10-5-cap385.elp');
     EEG = eeg_checkset( EEG );
    
     %EEG = pop_saveset( EEG, 'filename',['BNBO_ses2_cond1_block' num2str(block_num) '_eeg_raw.set'],'filepath','C:\\NRI_BMI_Mahi_Project_files\\All_Subjects\\Subject_BNBO\\BNBO_Session2\\');

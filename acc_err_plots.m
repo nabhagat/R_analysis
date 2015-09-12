@@ -2105,7 +2105,7 @@ end
 if compare_closed_loop_features == 1
                 figure('Position',[1000 1400 6*116 4*116]);
                 T_plot = tight_subplot(2,4,[0.15 0.05],[0.1 0.1],[0.1 0.01]);
-                subj_n = 3;
+                subj_n = 4;
                 for n = 1:length(Sess_nums)
                     ses_n = Sess_nums(n);
                     folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(ses_n) '\'];
