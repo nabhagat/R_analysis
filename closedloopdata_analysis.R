@@ -66,14 +66,16 @@ find_next_response_index <- function(response_trigs,catch_trigs){
 
 
 ################################### MAIN PROGRAM ############################################################# 
-directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
+directory <- "F:/Nikunj_Data/NRI_BMI_Mahi_Project_files/All_Subjects/"
 
 # Changes to be made
-Subject_name <- "JF"            #1 
-closeloop_Sess_num <- 5           #2
-closedloop_Block_num <- c(6:9)      #3
-velocity_threshold <- 0.0232      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
-Cond_num  <- 3                    #5 1 - Backdrive, 3-Triggered modes
+Subject_name <- "PLSH"            #1 
+closeloop_Sess_num <- 4           #2
+closedloop_Block_num <- c(1)      #3
+velocity_threshold <- 0.0183      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
+Cond_num  <- 1                    #5 1 - Backdrive, 3-Triggered modes
+use_simulated_closeloop_results <- 1
+simulation_mode <- "UD" # UD - use simulated user-driven mode; UT - use simulated user-triggered mode
 
 Training_Sess_num <- "2"
 Training_Block_num <- "160"
@@ -86,6 +88,7 @@ Classifier <- readMat(paste(c(directory,Training_folderid,Training_fileid,"_clas
 
 Total_num_of_trials <- NULL
 Successful_trials <- NULL
+Successful_EEG_EMG_trials <- NULL
 Catch_trials <- NULL
 Failed_Catch_trials <- NULL
 Intent_EEG_epochs_session <- NULL
@@ -107,10 +110,14 @@ cl_session_stats <- data.frame(
                               feature_index = numeric(),
                               Corrected_spatial_chan_avg_index = numeric(),
                               Correction_applied_in_samples = numeric(),
-                              Likert_score = numeric()
+                              Likert_score = numeric(),
+                              Target = numeric(),
+                              Kinematic_onset_sample_num = numeric(),
+                              Target_is_hit = numeric()
                               )
 
 folderid <- paste(c("Subject_",Subject_name,"/",Subject_name,"_Session",toString(closeloop_Sess_num),"/"),collapse = '')
+sim_results_folderid <- paste(c("Subject_",Subject_name,"/",Subject_name,"_Session",toString(closeloop_Sess_num),"B/"),collapse = '')
 
 for (bc in seq_along(closedloop_Block_num)){
 
@@ -118,6 +125,8 @@ for (bc in seq_along(closedloop_Block_num)){
       #cl_kinematics_data <- read.table("JF_ses4_block5_closeloop_kinematics.txt",header = TRUE, skip = 14)
       
       fileid <- paste(c(Subject_name,"_ses",toString(closeloop_Sess_num),"_block",toString(closedloop_Block_num[bc])),collapse = '')
+      sim_results_fileid <- paste(c(Subject_name,"_ses",toString(closeloop_Sess_num),"B_block",toString(closedloop_Block_num[bc]),"_",simulation_mode),collapse = '')
+      
 #      if (closedloop_Block_num[bc] == 7){
 #        cl_kinematics_data <- read.table(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),header = TRUE, skip = 14,nrows = 395346)
 #      }
@@ -126,7 +135,11 @@ for (bc in seq_along(closedloop_Block_num)){
 #      }
       kin_header <- scan(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),what ="character",skip = 11,nlines = 1)
       block_likert <- type.convert(kin_header[!is.na(type.convert(kin_header,na.strings = c("Survey","Responses:")))])
-      cl_BMI_data <- readMat(paste(c(directory,folderid,fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
+      if(use_simulated_closeloop_results == 1){
+        cl_BMI_data <- readMat(paste(c(directory,sim_results_folderid,sim_results_fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
+      }else{
+        cl_BMI_data <- readMat(paste(c(directory,folderid,fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
+      }
       cl_BMI_data$marker_block[,1] <- as.double(cl_BMI_data$marker_block[,1]) # convert marker block in double precision
       marker_block_index <- which(cl_BMI_data$marker_block[,2] == 300)        # Used to find feature_index
       #move_counts_index <- which(cl_BMI_data$move_counts == max(cl_BMI_data$all_cloop_cnts_threshold))  # Also used to find feature_index
@@ -140,7 +153,7 @@ for (bc in seq_along(closedloop_Block_num)){
       # Trig_Mov - Movement onset
       colnames(cl_kinematics_data)[c(1,17,18,19)] <- c("time","Target_shown","Target_reached","Move_onset")
       colnames(cl_kinematics_data)[c(21,22)] <- c("Catch","Timeout") # Timeout and catch columns must be swapped - Ted
-      colnames(cl_kinematics_data)[c(7,12)] <- c("Elbow_velocity","Elbow_torque")
+      colnames(cl_kinematics_data)[c(2,7,12)] <- c("Elbow_position","Elbow_velocity","Elbow_torque")
       
       # Get first sample when a trigger signal was generated
       cl_kinematics_data$Target_shown <- ExtractUniqueTriggers(cl_kinematics_data$Target_shown)
@@ -157,7 +170,8 @@ for (bc in seq_along(closedloop_Block_num)){
       cl_kinematics_data$Timeout <- ExtractUniqueTriggers(cl_kinematics_data$Timeout)
 
       # Filter the velocity and compute magnitude
-      filt_vel <- abs(sgolayfilt(cl_kinematics_data$Elbow_velocity,p = 1,n = 201))
+      #filt_vel <- abs(sgolayfilt(cl_kinematics_data$Elbow_velocity,p = 1,n = 201))  # No filtering to avoid any time delays
+      filt_vel <- abs(cl_kinematics_data$Elbow_velocity)
       vel_triggers <- numeric(length(filt_vel))
       vel_triggers[filt_vel >= velocity_threshold] <- 5   # Digitize 0 or 5 as trigger levels
       vel_triggers_initial <- ExtractUniqueTriggers(vel_triggers,polarity = 1)
@@ -177,10 +191,10 @@ for (bc in seq_along(closedloop_Block_num)){
       }
       
       # Plot all triggers - How to create better plots?
-      mycolors <- c("green","magenta","blue","green","black","green","red")
+      mycolors <- c("green","magenta","blue","green","black","red","yellow","black")
       #plot.ts(cl_kinematics_data[,c("Catch","Target_shown","Target_reached","Move_onset","Timeout")],plot.type = "single",col = mycolors, xy.labels = "")
-      data_to_plot <- data.frame(filt_vel,vel_trigger_mod,cl_kinematics_data[,c("Target_shown","Target_reached","Move_onset","Timeout","Catch")])
-      #plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,2))
+      data_to_plot <- data.frame(filt_vel,vel_trigger_mod,cl_kinematics_data[,c("Target_shown","Target_reached","Move_onset","Timeout","Catch","Target")])
+      plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,4))
             
       # Remove Catch trials from Valid trials count i.e. correct for Catch Trials
       if (Subject_name == "JF"){
@@ -195,10 +209,11 @@ for (bc in seq_along(closedloop_Block_num)){
       }
       else{      
         # Combine Target_reached + Timeout
-        # end_trial <- cl_kinematics_data$Target_reached + cl_kinematics_data$Timeout
+        Target_hit <- cl_kinematics_data$Target_reached + cl_kinematics_data$Timeout
         # Instead Combine Move_onset + Timeout Added Dec 8,2014
         end_trial <- cl_kinematics_data$Move_onset + cl_kinematics_data$Timeout
         all_response_indices <- which(end_trial==1)
+        all_target_hits <- which(Target_hit==1)
         catch_indices <- which(cl_kinematics_data$Catch == 1)
         all_stimulus_indices <- which(cl_kinematics_data$Target_shown == 1)
         nearest_stimulus_indices <- find_next_stimulus_index(all_stimulus_indices,catch_indices)
@@ -223,7 +238,10 @@ for (bc in seq_along(closedloop_Block_num)){
                               feature_index = numeric(length(all_stimulus_indices)),
                               Corrected_spatial_chan_avg_index = numeric(length(all_stimulus_indices)),
                               Correction_applied_in_samples = numeric(length(all_stimulus_indices)),
-                              Likert_score = block_likert
+                              Likert_score = block_likert,
+                              Target = cl_kinematics_data$Target[all_stimulus_indices],
+                              Kinematic_onset_sample_num = numeric(length(all_stimulus_indices)),
+                              Target_is_hit = all_target_hits
       )
       
       for (i in seq_along(nearest_stimulus_indices)){
@@ -245,12 +263,22 @@ for (bc in seq_along(closedloop_Block_num)){
           cl_trial_stats$Time_to_trigger[m] <- (kinematic_data_trial_interval[2] - kinematic_data_trial_interval[1])/1000
         }
         
+        kinematic_data_trial_interval_new <- c(all_stimulus_indices[m],all_target_hits[m]) # Added for calculating EEG-Onset latency
+        
         cl_trial_stats$Number_of_attempts[m] <- 
-          length(which(vel_trigger_mod[kinematic_data_trial_interval[1]:kinematic_data_trial_interval[2]] == 1))
+          length(which(vel_trigger_mod[kinematic_data_trial_interval_new[1]:kinematic_data_trial_interval_new[2]] == 1))
+        
+        if(cl_trial_stats$Number_of_attempts[m] == 0){
+          cl_trial_stats$Kinematic_onset_sample_num[m] <- kinematic_data_trial_interval_new[1]
+        }
+        else{
+        cl_trial_stats$Kinematic_onset_sample_num[m] <- 
+          kinematic_data_trial_interval[1] + max(which(vel_trigger_mod[kinematic_data_trial_interval_new[1]:kinematic_data_trial_interval_new[2]] == 1))
+        }
       }
 
       adj_start_of_trial <- round(cl_trial_stats$Start_of_trial/2) -  250   # Downsample to 500 Hz
-      adj_end_of_trial <- round(cl_trial_stats$End_of_trial/2) + 250
+      adj_end_of_trial <- round(cl_trial_stats$End_of_trial/2) + 350
 
       # Determine values of features when Intent was detected i.e. last EEG_GO decision(marker 300)
       # We have all EEG_GO decision available - use move_counts 
@@ -304,6 +332,10 @@ for (bc in seq_along(closedloop_Block_num)){
             
             feature_index <- move_counts_index[which(marker_block_index == marker_block_300)]   # Added Dec10,2014
             
+            if (use_simulated_closeloop_results == 1){
+              # Do not find EEG features because of some bug
+              next # added 5-21-2015
+            }
             
             ## No longer used - Dec10,2014
             # Note: Correct way to resample is new_time_stamp = round((old_time_stamp/old_frequency)*new_frequency)
@@ -463,13 +495,28 @@ for (bc in seq_along(closedloop_Block_num)){
       Total_num_of_trials <- c(Total_num_of_trials,length(which(cl_session_stats[block_ind,"Valid_or_catch"] == 1)))
       Successful_trials <- c(Successful_trials,length(intersect(which(cl_session_stats[block_ind,"Valid_or_catch"] == 1), 
                                             which(cl_session_stats[block_ind,"Intent_detected"] == 1))))
+      Successful_EEG_EMG_trials <- c(Successful_EEG_EMG_trials,length(intersect(which(cl_session_stats[block_ind,"Valid_or_catch"] == 1), 
+                                            which(cl_session_stats[block_ind,"EEG_EMG_decisions"] == 1))))
+
       Catch_trials <- c(Catch_trials,length(which(cl_session_stats[block_ind,"Valid_or_catch"] == 2)))
       Failed_Catch_trials <- c(Failed_Catch_trials,length(intersect(which(cl_session_stats[block_ind,"Valid_or_catch"] == 2), 
                                                    which(cl_session_stats[block_ind,"Intent_detected"] == 1))))
 
+      cl_kinematic_params <- data.frame(
+        #Block_number = rep_len(closedloop_Block_num[bc],length(all_stimulus_indices)),
+        #Start_of_trial = round(all_stimulus_indices/2),
+        #End_of_trial = round((cl_kinematics_data$Target_reached + cl_kinematics_data$Timeout)/2),
+        #Valid_or_catch = cl_trial_stats$Valid_or_catch,
+        Elbow_pos = resample(cl_kinematics_data$Elbow_position,500,1000),
+        Elbow_vel = resample(cl_kinematics_data$Elbow_velocity,500,1000),
+        time = resample(cl_kinematics_data$time,500,1000)
+      ) # Used for creating Raster Plot !!
+  
+
 }
 cat("Block Numbers:       ", closedloop_Block_num, "\n")
 cat("Successful Trials:   ", Successful_trials, "\n")
+cat("Successful EEG- EMG Trials:   ", Successful_EEG_EMG_trials, "\n")
 cat("Total Num of trials: ", Total_num_of_trials, "\n")
 cat("Failed Catch trials: ", Failed_Catch_trials, "\n")
 cat("Total Catch Trials:  ", Catch_trials,"\n")
@@ -477,7 +524,11 @@ cat("Are EEG_EMG_decisions and Intent_detected identifical? ",
     identical(cl_session_stats$Intent_detected,cl_session_stats$EEG_EMG_decisions), "  ",
     which(cl_session_stats$Intent_detected != cl_session_stats$EEG_EMG_decisions))
 
-save_filename <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_statistics.csv"),collapse = '')
+if (use_simulated_closeloop_results == 1){
+  save_filename <- paste(c(directory,sim_results_folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"B_",simulation_mode,"_cloop_statistics.csv"),collapse = '')
+}else{
+  save_filename <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_statistics.csv"),collapse = '')  
+}
 fileConn <- file(save_filename)
 cat("Block Numbers,", toString(closedloop_Block_num), "\n", #file = fileConn, sep = ',', append = T)
     "Successful Trials,", toString(Successful_trials), "\n", 
@@ -489,8 +540,12 @@ close(fileConn)
 write.table(x = cl_session_stats,file = save_filename,append = T,col.names = T, sep = ',')
 #close(fileConn)
 
-save_matfile <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_eeg_epochs.mat"),collapse = '')
-writeMat(save_matfile,Intent_EEG_epochs_session = Intent_EEG_epochs_session, append = FALSE)
+#save_matfile <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_eeg_epochs.mat"),collapse = '')
+#writeMat(save_matfile,Intent_EEG_epochs_session = Intent_EEG_epochs_session, append = FALSE)
+
+# Used for generating raster plot
+#save_matfile1 <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_block",toString(closedloop_Block_num),"_cloop_kinematic_params.mat"),collapse = '')
+#writeMat(save_matfile1,cl_kinematic_params = cl_kinematic_params, append = FALSE)
 
 
 
