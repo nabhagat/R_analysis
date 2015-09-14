@@ -1,13 +1,13 @@
 % Subject Details
-Subject_name = 'JF';
+Subject_name = 'S9007';
 Sess_num = '2';
-Cond_num = 3;  % 1 - Active; 2 - Passive; 3 - Triggered; 4 - Observation 
+Cond_num = 1;  % 1 - Active; 2 - Passive; 3 - Triggered; 4 - Observation 
 Block_num = 160;
 
 folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_name '\' Subject_name '_Session' num2str(Sess_num) '\']; % change2
-load([folder_path Subject_name '_ses' num2str(Sess_num) '_cond' num2str(Cond_num) '_block' num2str(Block_num) '_performance_optimized_causal.mat']);      % Always use causal for training classifier
+load([folder_path Subject_name '_ses' num2str(Sess_num) '_cond' num2str(Cond_num) '_block' num2str(Block_num) '_performance_optimized_smart.mat']);      % Always use causal for training classifier
                  
-channels  = Performance.classchannels;
+channels  = Performance.optimized_channels;
 smart_window_length = Performance.smart_window_length;
 smart_Cov_Mat = Performance.smart_Cov_Mat ;
 smart_Mu_move = Performance.smart_Mu_move;
