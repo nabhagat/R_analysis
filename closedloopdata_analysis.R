@@ -70,8 +70,8 @@ directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 
 # Changes to be made
 Subject_name <- "S9007"            #1 
-closeloop_Sess_num <- 5           #2
-closedloop_Block_num <- c(1:3,6,8:10)      #3
+closeloop_Sess_num <- 6           #2
+closedloop_Block_num <- c(1:7)      #3
 velocity_threshold <- (1.19)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
 Cond_num  <- 1                    #5 1 - Backdrive, 3-Triggered modes
 use_simulated_closeloop_results <- 0
@@ -139,7 +139,10 @@ for (bc in seq_along(closedloop_Block_num)){
       if(use_simulated_closeloop_results == 1){
         cl_BMI_data <- readMat(paste(c(directory,sim_results_folderid,sim_results_fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
       }else{
-        cl_BMI_data <- readMat(paste(c(directory,folderid,fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
+        # cl_BMI_data <- readMat(paste(c(directory,folderid,fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
+        # Read files that have time-stamps in filenames
+        closeloop_mat_filename <- dir(path = paste(c(directory,folderid),collapse = ''),pattern = paste(c(fileid,"_closeloop_results_"),collapse = ''))
+        cl_BMI_data <- readMat(paste(c(directory,folderid,closeloop_mat_filename),collapse = ''),fixNames = FALSE)
       }
       cl_BMI_data$marker_block[,1] <- as.double(cl_BMI_data$marker_block[,1]) # convert marker block in double precision
       marker_block_index <- which(cl_BMI_data$marker_block[,2] == 300)        # Used to find feature_index
