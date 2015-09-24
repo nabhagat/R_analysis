@@ -70,8 +70,8 @@ directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 
 # Changes to be made
 Subject_name <- "S9007"            #1 
-closeloop_Sess_num <- 6           #2
-closedloop_Block_num <- c(1:7)      #3
+closeloop_Sess_num <- 10           #2
+closedloop_Block_num <- c(1:4,6:9)      #3
 velocity_threshold <- (1.19)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
 Cond_num  <- 1                    #5 1 - Backdrive, 3-Triggered modes
 use_simulated_closeloop_results <- 0
@@ -126,15 +126,16 @@ for (bc in seq_along(closedloop_Block_num)){
       
       fileid <- paste(c(Subject_name,"_ses",toString(closeloop_Sess_num),"_block",toString(closedloop_Block_num[bc])),collapse = '')
       kin_fileid <- paste(c(Subject_name,"_CLses",toString(closeloop_Sess_num),"_block",toString(closedloop_Block_num[bc])),collapse = '')
+      kin_filename <- dir(path = paste(c(directory,folderid),collapse = ''),pattern = paste(c(kin_fileid,"_kinematics"),collapse = ''))
       sim_results_fileid <- paste(c(Subject_name,"_ses",toString(closeloop_Sess_num),"B_block",toString(closedloop_Block_num[bc]),"_",simulation_mode),collapse = '')
       
 #      if (closedloop_Block_num[bc] == 7){
 #        cl_kinematics_data <- read.table(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),header = TRUE, skip = 14,nrows = 395346)
 #      }
 #      else{
-      cl_kinematics_data <- read.table(paste(c(directory,folderid,kin_fileid,"_kinematics.txt"),collapse = ''),header = TRUE, skip = 14) #,nrows = 395346)
+      cl_kinematics_data <- read.table(paste(c(directory,folderid,kin_filename),collapse = ''),header = TRUE, skip = 14) #,nrows = 395346)
 #      }
-      kin_header <- scan(paste(c(directory,folderid,kin_fileid,"_kinematics.txt"),collapse = ''),what ="character",skip = 11,nlines = 1)
+      kin_header <- scan(paste(c(directory,folderid,kin_filename),collapse = ''),what ="character",skip = 11,nlines = 1)
       block_likert <- type.convert(kin_header[!is.na(type.convert(kin_header,na.strings = c("Survey","Responses:")))])
       if(use_simulated_closeloop_results == 1){
         cl_BMI_data <- readMat(paste(c(directory,sim_results_folderid,sim_results_fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
