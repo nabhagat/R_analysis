@@ -70,8 +70,8 @@ directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 
 # Changes to be made
 Subject_name <- "S9007"            #1 
-closeloop_Sess_num <- 10           #2
-closedloop_Block_num <- c(1:4,6:9)      #3
+closeloop_Sess_num <- 14           #2
+closedloop_Block_num <- c(1:8)      #3
 velocity_threshold <- (1.19)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
 Cond_num  <- 1                    #5 1 - Backdrive, 3-Triggered modes
 use_simulated_closeloop_results <- 0
@@ -228,10 +228,10 @@ for (bc in seq_along(closedloop_Block_num)){
       }
       
       # Plot all triggers - How to create better plots?
-      mycolors <- c("green","magenta","blue","black","black","red","yellow","black")
+      mycolors <- c("green","magenta","blue","black","green","red","yellow","black")
       #plot.ts(cl_kinematics_data[,c("Catch","Target_shown","Target_reached","Move_onset","Timeout")],plot.type = "single",col = mycolors, xy.labels = "")
-      data_to_plot <- data.frame(filt_vel,vel_trigger_mod,cl_kinematics_data[,c("Target_shown","Target_reached","Move_onset","Timeout","Catch","Target")])
-      #plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,4))
+      data_to_plot <- data.frame(filt_vel,cl_kinematics_data[,c("Target_shown","Target_reached","Move_onset","Timeout","Catch")])
+      plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,0.5))
             
       # Remove Catch trials from Valid trials count i.e. correct for Catch Trials
       if (Subject_name == "JF"){
@@ -553,7 +553,7 @@ for (bc in seq_along(closedloop_Block_num)){
 }
 cat("Block Numbers:       ", closedloop_Block_num, "\n")
 cat("Successful Trials:   ", Successful_trials, "\n")
-cat("Successful EEG- EMG Trials:   ", Successful_EEG_EMG_trials, "\n")
+#cat("Successful EEG- EMG Trials:   ", Successful_EEG_EMG_trials, "\n")
 cat("Total Num of trials: ", Total_num_of_trials, "\n")
 cat("Failed Catch trials: ", Failed_Catch_trials, "\n")
 cat("Total Catch Trials:  ", Catch_trials,"\n")
@@ -577,7 +577,7 @@ cat("Block Numbers,", toString(closedloop_Block_num), "\n", #file = fileConn, se
     "Total Catch Trials,", toString(Catch_trials),"\n\n",file = fileConn, sep = '', append = T)  
 close(fileConn)
 #fileConn <- file(save_filename)
-write.table(x = cl_session_stats,file = save_filename,append = T,col.names = T, sep = ',')
+write.table(x = cl_session_stats,file = save_filename,append = T,col.names = T,row.names = F, sep = ',')
 #close(fileConn)
 
 save_matfile <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_cloop_eeg_epochs.mat"),collapse = '')

@@ -1,0 +1,173 @@
+# Program for automatically enlisting the files generated during BMI_MAHI Clinical trial
+################ Libraries
+
+################ Main Program ########################
+directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
+Subject_name <- "S9007"            #1 
+Subject_velocity_threshold <- 1.19 # Unit - rad/sec
+Subject_cap_size <- 58 # Unit - cm
+Subject_impaired_side <- "right"
+EMG_channel_nos <- c(42,41,51,17,45,46,55,22)
+Calibration_Cond_num  <- c(1)      # 1 - User-driven (UD), 3 - User-triggered (UT). Not - If both UD and UT were used then enter c(1,3)
+
+block_wise_file_extensions <- c(".eeg",".vhdr",".vmrk",           # BrainVision Recorder
+                               ".mat",                            # MATLAB
+                               ".set",".fdt",                     # EEGLAB Toolbox
+                               ".txt",                            # Kinematics - MAHI Exo 
+                               ".avi"                             # Video files
+                              )
+session_wise_file_extensions <- c(".txt",                         # EEG electrode impedance
+                                  ".elp"                         # Electrode location file - CAPTRACK digitizer
+                                  )
+# Finds the Session numbers for a subject
+setwd(paste(c(directory,"Subject_",Subject_name,"/"),collapse = ''))
+all_sessions_directory_names <- dir(path = ".",pattern = paste(c(Subject_name,"_Session"),collapse = ''))
+Session_nos <- sort(as.numeric(gsub(pattern = paste(c(Subject_name,"_Session"),collapse = ''),"",x = all_sessions_directory_names)))
+
+header_summary_file <- data.frame(col1 = c("Subject:","Total sessions","Impaired side",
+                                           "EEG Cap size","Velocity threshold (rad/s)","EMG_channel_nos","",""),
+                                  col2 = c(Subject_name,length(Session_nos),Subject_impaired_side,
+                                           Subject_cap_size,Subject_velocity_threshold,paste(EMG_channel_nos,collapse = ' '),"","")
+)
+
+save_filename <- paste(c(directory,"Subject_",Subject_name,"/",Subject_name,"_experiment_summary.csv"),collapse = '')
+if (file.exists(save_filename)){
+  file.remove(save_filename)
+}
+write.table(x = header_summary_file,file = save_filename,append = T,col.names = F, row.names = F, sep = ',')
+
+for (ses_num in seq_along(Session_nos)){
+  setwd(paste(c(directory,"Subject_",Subject_name,"/",Subject_name,"_Session",Session_nos[ses_num]),collapse = ''))
+  
+  # Make table to save filenames within a session
+  for (sc in seq_along(session_wise_file_extensions)){
+    loop_ext <- session_wise_file_extensions[sc]
+    
+    # .elp files
+    if (loop_ext == ".elp"){
+      if (file.exists(dir(".",pattern = ".elp"))){
+        electrode_location_filename <- dir(".",pattern = ".elp")
+      }
+      else{
+        electrode_location_filename <- "NA"
+      }
+    }
+    
+    # .txt files for Electrode Impedance
+    if (loop_ext == ".txt"){
+      impedance_filenames <- as.character()
+      if (file.exists(dir(".",pattern = "*impedance*"))){
+        impedance_files <- dir(".",pattern = "*impedance*")
+        if (length(grep("start",impedance_files))!= 0){
+          impedance_filenames[1] <- impedance_files[grep("start",impedance_files)] 
+        }
+        else {
+          impedance_filenames[1] <- "NA"
+        }
+        if (length(grep("break",impedance_files))!= 0){
+          impedance_filenames[2] <- impedance_files[grep("break",impedance_files)] 
+        }
+        else {
+          impedance_filenames[2] <- "NA"
+        }  
+        if (length(grep("stop",impedance_files))!= 0){
+          impedance_filenames[3] <- impedance_files[grep("stop",impedance_files)] 
+        }
+        else if (length(grep("end",impedance_files))!= 0){
+          impedance_filenames[3] <- impedance_files[grep("end",impedance_files)] 
+        }
+        else {
+          impedance_filenames[3] <- "NA"
+        }  
+      }
+      else{
+        impedance_filenames <- "NA"
+      }
+    }
+  }
+  Session_specific_files <- data.frame(col1 = c("","Session No:","Total blocks","Electrode locations (.elp)","Electrode Impedance (.txt)"," "," ",""),
+                                       col2 = c("",Session_nos[ses_num],length(Block_nos),electrode_location_filename,impedance_filenames,""))                  
+  if ((Session_nos[ses_num] == 1) || (Session_nos[ses_num] == 2)){
+    # Different naming convention and add EEGLAB dataset names
+    # Based on .vhdr file naming convention
+    #begin_filename_identifier <- paste(c(Subject_name,"_ses",Session_nos[ses_num],"_cond"),collapse = '')
+    #end_filename_identifier <- ".vhdr"
+    next
+  }
+  else{
+    # Use closed-loop naming format
+    # Based on .vhdr file naming convention
+    begin_filename_identifier <- paste(c(Subject_name,"_ses",Session_nos[ses_num],"_closeloop_block0"),collapse = '')
+    end_filename_identifier <- ".vhdr"
+    
+    # Based on kinematics naming convention
+    #begin_filename_identifier <- paste(c(Subject_name,"_CLses",Session_nos[ses_num],"_block"),collapse = '')
+    #end_filename_identifier <- "_kinematics.txt"
+  }
+  
+  # Finds the block numbers within each session
+  files_with_vhdr_extension <- dir(path = ".",pattern = end_filename_identifier,recursive = FALSE)
+  #files_with_vhdr_extension <- files_with_vhdr_extension[grep(pattern = begin_filename_identifier,"",x = files_with_vhdr_extension)]
+  Block_nos <- sort(as.numeric(gsub(pattern = end_filename_identifier,"", x = 
+                                      gsub(pattern = begin_filename_identifier,"",x = files_with_vhdr_extension))))
+  
+  # Make table to save filenames for each block within a session
+  Block_wise_files <- data.frame(File_Types = block_wise_file_extensions)
+  #Block_wise_files <- lapply(Block_wise_files,as.character)
+  
+  for (bc in seq_along(Block_nos)){
+    # Add a new column for new block
+    Block_wise_files[,paste(c("Block",Block_nos[bc]),collapse = '')] <- "NA"
+    
+    for (bc_ext in seq_along(block_wise_file_extensions)){
+      loop_ext <- block_wise_file_extensions[bc_ext]
+    
+      # .eeg, .vhdr, .vmrk files
+      if (loop_ext == ".eeg" || loop_ext == ".vhdr" || loop_ext == ".vmrk"){
+        if (Block_nos[bc] <= 9){
+          check_file_exists <- paste(c(Subject_name,"_ses",ses_num,"_closeloop_block000",Block_nos[bc],loop_ext),collapse = '') 
+        }
+        else {
+          check_file_exists <- paste(c(Subject_name,"_ses",ses_num,"_closeloop_block000",Block_nos[bc],loop_ext),collapse = '')             
+          }  
+      }
+      
+      # .mat files
+      if (loop_ext == ".mat") {
+        # Include wildchars
+        check_file_exists <- dir(".",paste(c(Subject_name,"_ses",ses_num,"_block",Block_nos[bc],"_closeloop_results*"),collapse = ''))
+      }
+      
+      # .txt files - Kinematics
+      if (loop_ext == ".txt") {
+        # Include wildchars
+        check_file_exists <- dir(".",paste(c(Subject_name,"_CLses",ses_num,"_block",Block_nos[bc],"_kinematics*"),collapse = ''))
+      }
+      
+      # .avi files
+      if (loop_ext == ".avi") {
+        # Include wildchars
+        check_file_exists <- dir(".",paste(c(Subject_name,"_ses",ses_num,"_block",Block_nos[bc],"_closeloop_video*"),collapse = ''))
+      }
+      
+      # .fdt, .set files
+      if (loop_ext == ".set" || loop_ext == ".fdt") {
+        check_file_exists <- paste(c(Subject_name,"_ses",ses_num,"_block",Block_nos[bc],"_closeloop_eeglab",loop_ext),collapse = '')
+      }
+      
+      if(length(file.exists(check_file_exists)) != 0){
+        Block_wise_files[grep(loop_ext,Block_wise_files$File_Types),paste(c("Block",Block_nos[bc]),collapse = '')] <- check_file_exists
+      }
+    }
+  }
+  
+  #fileConn <- file(save_filename)
+  #cat("\n\n",file = fileConn, sep = '', append = T)  
+  #close(fileConn)
+  write.table(x = Session_specific_files,file = save_filename,append = T,col.names = F, row.names = F, sep = ',')
+  #fileConn <- file(save_filename)
+  #cat("\n\n",file = fileConn, sep = '', append = T)  
+  #close(fileConn)
+  write.table(x = Block_wise_files,file = save_filename,append = T,col.names = T, row.names = F, sep = ',')
+  
+}
