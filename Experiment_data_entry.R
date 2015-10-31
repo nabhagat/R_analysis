@@ -1,6 +1,9 @@
 # Program for automatically enlisting the files generated during BMI_MAHI Clinical trial
 ################ Libraries
-
+library(signal)
+library(R.matlab)
+library(pracma)
+library(abind)
 ################ Main Program ########################
 directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
 Subject_name <- "S9007"            #1 
@@ -17,7 +20,9 @@ block_wise_file_extensions <- c(".eeg",".vhdr",".vmrk",           # BrainVision 
                                ".avi"                             # Video files
                               )
 session_wise_file_extensions <- c(".txt",                         # EEG electrode impedance
-                                  ".elp"                         # Electrode location file - CAPTRACK digitizer
+                                  ".elp",                         # Electrode location file - CAPTRACK digitizer
+                                  ".csv",                         # Closed-loop session results 
+                                  ".mat"                          # Closed-loop EEG epochs
                                   )
 # Finds the Session numbers for a subject
 setwd(paste(c(directory,"Subject_",Subject_name,"/"),collapse = ''))
@@ -30,14 +35,62 @@ header_summary_file <- data.frame(col1 = c("Subject:","Total sessions","Impaired
                                            Subject_cap_size,Subject_velocity_threshold,paste(EMG_channel_nos,collapse = ' '),"","")
 )
 
-save_filename <- paste(c(directory,"Subject_",Subject_name,"/",Subject_name,"_experiment_summary.csv"),collapse = '')
-if (file.exists(save_filename)){
-  file.remove(save_filename)
-}
+save_filename <- paste(c(directory,"Subject_",Subject_name,"/",Subject_name,"_experiment_summary_",
+                         format(Sys.time(), "%y-%m-%d_%H-%M-%S"),".csv"),collapse = '')
+save_results_file <- paste(c(directory,"Subject_",Subject_name,"/",Subject_name,"_session_wise_results_",
+                             format(Sys.time(), "%y-%m-%d_%H-%M-%S"),".csv"),collapse = '')
+save_results_file_header <- 1
+  
+#if (file.exists(save_filename)){
+#  file.remove(save_filename)
+#}
+
 write.table(x = header_summary_file,file = save_filename,append = T,col.names = F, row.names = F, sep = ',')
 
 for (ses_num in seq_along(Session_nos)){
   setwd(paste(c(directory,"Subject_",Subject_name,"/",Subject_name,"_Session",Session_nos[ses_num]),collapse = ''))
+  
+  
+            
+  if ((Session_nos[ses_num] == 1) || (Session_nos[ses_num] == 2)){
+    # Different naming convention and add EEGLAB dataset names
+    # Based on .vhdr file naming convention
+    #begin_filename_identifier <- paste(c(Subject_name,"_ses",Session_nos[ses_num],"_cond"),collapse = '')
+    #end_filename_identifier <- ".vhdr"
+    next
+  }
+  else{
+    # Use closed-loop naming format
+    # Based on .vhdr file naming convention
+    begin_filename_identifier <- paste(c(Subject_name,"_ses",Session_nos[ses_num],"_closeloop_block0"),collapse = '')
+    end_filename_identifier <- ".vhdr"
+    
+    # Based on kinematics naming convention
+    #begin_filename_identifier <- paste(c(Subject_name,"_CLses",Session_nos[ses_num],"_block"),collapse = '')
+    #end_filename_identifier <- "_kinematics.txt"
+  }
+  
+  # Finds the block numbers within each session
+  files_with_vhdr_extension <- dir(path = ".",pattern = end_filename_identifier,recursive = FALSE)
+  #files_with_vhdr_extension <- files_with_vhdr_extension[grep(pattern = begin_filename_identifier,"",x = files_with_vhdr_extension)]
+  Block_nos <- sort(as.numeric(gsub(pattern = end_filename_identifier,"", x = 
+                                      gsub(pattern = begin_filename_identifier,"",x = files_with_vhdr_extension))))
+  
+  # Call closedloopdata_analysis.R to analyze data for each session
+  session_results <- analyze_closedloop_session_data(directory = directory,
+                                                    Subject_name = Subject_name,
+                                                    closeloop_Sess_num = Session_nos[ses_num],  
+                                                    closedloop_Block_num = Block_nos[Block_nos > 0]    #Block0 is for robotic assessmenet - so ignore 
+                                                    )
+  if (save_results_file_header == 1){
+    write.table(x = session_results,file = save_results_file,append = T,col.names = T, row.names = F, sep = ',')
+    save_results_file_header <- 0
+  }
+  else{
+    write.table(x = session_results,file = save_results_file,append = T,col.names = F, row.names = F, sep = ',')
+  }
+  
+  
   
   # Make table to save filenames within a session
   for (sc in seq_along(session_wise_file_extensions)){
@@ -84,32 +137,32 @@ for (ses_num in seq_along(Session_nos)){
         impedance_filenames <- "NA"
       }
     }
-  }
-  Session_specific_files <- data.frame(col1 = c("","Session No:","Total blocks","Electrode locations (.elp)","Electrode Impedance (.txt)"," "," ",""),
-                                       col2 = c("",Session_nos[ses_num],length(Block_nos),electrode_location_filename,impedance_filenames,""))                  
-  if ((Session_nos[ses_num] == 1) || (Session_nos[ses_num] == 2)){
-    # Different naming convention and add EEGLAB dataset names
-    # Based on .vhdr file naming convention
-    #begin_filename_identifier <- paste(c(Subject_name,"_ses",Session_nos[ses_num],"_cond"),collapse = '')
-    #end_filename_identifier <- ".vhdr"
-    next
-  }
-  else{
-    # Use closed-loop naming format
-    # Based on .vhdr file naming convention
-    begin_filename_identifier <- paste(c(Subject_name,"_ses",Session_nos[ses_num],"_closeloop_block0"),collapse = '')
-    end_filename_identifier <- ".vhdr"
     
-    # Based on kinematics naming convention
-    #begin_filename_identifier <- paste(c(Subject_name,"_CLses",Session_nos[ses_num],"_block"),collapse = '')
-    #end_filename_identifier <- "_kinematics.txt"
+    if (loop_ext == ".csv"){
+      if(file.exists(dir(".",pattern = paste(c("_ses",Session_nos[ses_num],"_cloop_results.csv"),collapse = '')))){
+        session_results_filename <- dir(".",pattern = paste(c("_ses",Session_nos[ses_num],"_cloop_results.csv"),collapse = ''))
+      }
+      else{
+        session_results_filename <- "NA"
+      }
+    }
+    
+    if (loop_ext == ".mat"){
+      if(file.exists(dir(".",pattern = paste(c("_ses",Session_nos[ses_num],"_cloop_eeg_epochs.mat"),collapse = '')))){
+        eeg_epochs_filename <- dir(".",pattern = paste(c("_ses",Session_nos[ses_num],"_cloop_eeg_epochs.mat"),collapse = ''))
+      }
+      else{
+        eeg_epochs_filename <- "NA"
+      }
+    }
   }
   
-  # Finds the block numbers within each session
-  files_with_vhdr_extension <- dir(path = ".",pattern = end_filename_identifier,recursive = FALSE)
-  #files_with_vhdr_extension <- files_with_vhdr_extension[grep(pattern = begin_filename_identifier,"",x = files_with_vhdr_extension)]
-  Block_nos <- sort(as.numeric(gsub(pattern = end_filename_identifier,"", x = 
-                                      gsub(pattern = begin_filename_identifier,"",x = files_with_vhdr_extension))))
+  Session_specific_files <- data.frame(col1 = c("","Session No:","Total blocks","Electrode locations (.elp)",
+                                                "Electrode Impedance (.txt)"," "," ",
+                                                "Closed-loop results (.csv)","Closed-loop EEG epochs (.mat)",""),
+                                       col2 = c("",Session_nos[ses_num],length(Block_nos),electrode_location_filename,
+                                                impedance_filenames,
+                                                session_results_filename,eeg_epochs_filename,""))        
   
   # Make table to save filenames for each block within a session
   Block_wise_files <- data.frame(File_Types = block_wise_file_extensions)
