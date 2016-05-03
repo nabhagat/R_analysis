@@ -6,10 +6,10 @@ library(pracma)
 library(abind)
 ################ Main Program ########################
 directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
-Subject_name <- "S9007"            #1 
-Subject_velocity_threshold <- 1.19 # Unit - rad/sec
-Subject_cap_size <- 58 # Unit - cm
-Subject_impaired_side <- "right"
+Subject_name <- "S9011"            #1 
+Subject_velocity_threshold <- 1.16 # Unit - rad/sec
+Subject_cap_size <- 56 # Unit - cm
+Subject_impaired_side <- "left"
 EMG_channel_nos <- c(42,41,51,17,45,46,55,22)
 Calibration_Cond_num  <- c(1)      # 1 - User-driven (UD), 3 - User-triggered (UT). Not - If both UD and UT were used then enter c(1,3)
 
@@ -51,8 +51,8 @@ for (ses_num in seq_along(Session_nos)){
   setwd(paste(c(directory,"Subject_",Subject_name,"/",Subject_name,"_Session",Session_nos[ses_num]),collapse = ''))
   
   
-            
-  if ((Session_nos[ses_num] == 1) || (Session_nos[ses_num] == 2)){
+  if ((Session_nos[ses_num] == 1) || (Session_nos[ses_num] == 2)){          
+  #if ((Session_nos[ses_num] == 1) || (Session_nos[ses_num] == 2) || (Session_nos[ses_num] == 3)){
     # Different naming convention and add EEGLAB dataset names
     # Based on .vhdr file naming convention
     #begin_filename_identifier <- paste(c(Subject_name,"_ses",Session_nos[ses_num],"_cond"),collapse = '')
@@ -98,10 +98,9 @@ for (ses_num in seq_along(Session_nos)){
     
     # .elp files
     if (loop_ext == ".elp"){
-      if (file.exists(dir(".",pattern = ".elp"))){
+      if (length(file.exists(dir(".",pattern = ".elp")))){
         electrode_location_filename <- dir(".",pattern = ".elp")
-      }
-      else{
+      }else{
         electrode_location_filename <- "NA"
       }
     }

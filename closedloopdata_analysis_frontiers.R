@@ -1,9 +1,9 @@
 # BMI Mahi closed-loop data analysis
-# setwd("/home//nikunj//Documents//R_programs") 
-# library(signal)
-# library(R.matlab)
-# library(pracma)
-# library(abind)
+#setwd("/home//nikunj//Documents//R_programs") #Nikunj - 01/07/15
+library(signal)
+library(R.matlab)
+library(pracma)
+library(abind)
 ############################## FUNCTIONS
 
 ExtractUniqueTriggers <- function(TrigIn, lookback = 1, polarity = 0){
@@ -66,21 +66,22 @@ find_next_response_index <- function(response_trigs,catch_trigs){
 
 
 ################################### MAIN PROGRAM ############################################################# 
-analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Sess_num,closedloop_Block_num){ 
+#analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Sess_num,closedloop_Block_num){ #Nikunj - 01/07/16
 
-  # Changes to be made
-  #directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
-  #Subject_name <- "S9011"              #1 
-  #closeloop_Sess_num <- 14             #2
-  #closedloop_Block_num <- c(4:11)      #3
-
-  velocity_threshold <- (1.16)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
-  Cond_num  <- 1                             #5 1 - Backdrive, 3-Triggered modes
+  directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/" #Nikunj - 01/07/16
+  
+  Subject_name <- "PLSH"            #1 
+  closeloop_Sess_num <- 5           #2
+  closedloop_Block_num <- c(4:11)      #3
+  EMG_biceps_thr <- c(9,10,10,7,6,6,6,6)#31*rep(1,times = length(closedloop_Block_num))
+  EMG_triceps_thr <- c(5.5, 7.5, 7, 7, 6, 6, 6, 6)
+  velocity_threshold <- 0.0183 #(1.99)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
+  Cond_num  <- 3                    #5 1 - Backdrive, 3-Triggered modes
   use_simulated_closeloop_results <- 0
   simulation_mode <- "UD" # UD - use simulated user-driven mode; UT - use simulated user-triggered mode
   
   Training_Sess_num <- "2"
-  Training_Block_num <- "170"
+  Training_Block_num <- "160"
 
   # Load Classifier Model used during closed-loop
   Training_folderid <- paste(c("Subject_",Subject_name,"/",Subject_name,"_Session",Training_Sess_num,"/"),collapse = '')
@@ -124,13 +125,6 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
   folderid <- paste(c("Subject_",Subject_name,"/",Subject_name,"_Session",toString(closeloop_Sess_num),"/"),collapse = '')
   sim_results_folderid <- paste(c("Subject_",Subject_name,"/",Subject_name,"_Session",toString(closeloop_Sess_num),"B/"),collapse = '')
   
-  # Read .csv file to import thresholds for biceps and triceps
-  EMG_thresholds_fileid <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_closeloop_emg_thresholds.csv"),collapse = '')
-  EMG_Thresholds <- read.csv(EMG_thresholds_fileid,header = TRUE, skip = 0)
-  EMG_biceps_thr <- EMG_Thresholds$Biceps_Threshold #5*rep(1,times = length(closedloop_Block_num))
-  EMG_triceps_thr <- EMG_Thresholds$Triceps_Threshold #5*rep(1,times = length(closedloop_Block_num)) #c(5.5, 7.5, 7, 7, 6, 6, 6, 6)
-  
-
   for (bc in seq_along(closedloop_Block_num)){
   
         # Load kinematics file
@@ -145,11 +139,11 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
   #        cl_kinematics_data <- read.table(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),header = TRUE, skip = 14,nrows = 395346)
   #      }
   #      else{
-        cl_kinematics_data <- read.table(paste(c(directory,folderid,kin_filename),collapse = ''),header = TRUE, skip = 14) #,nrows = 395346)
-        #cl_kinematics_data <- read.table(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),header = TRUE, skip = 14) # Nikunj - 07/01/16
+        #cl_kinematics_data <- read.table(paste(c(directory,folderid,kin_filename),collapse = ''),header = TRUE, skip = 14) #,nrows = 395346)
+        cl_kinematics_data <- read.table(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),header = TRUE, skip = 14) # Nikunj - 07/01/16
   #      }
-        kin_header <- scan(paste(c(directory,folderid,kin_filename),collapse = ''),what ="character",skip = 11,nlines = 1)
-        #kin_header <- scan(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),what ="character",skip = 11,nlines = 1) # Nikunj - 07/01/16
+        #kin_header <- scan(paste(c(directory,folderid,kin_filename),collapse = ''),what ="character",skip = 11,nlines = 1)
+        kin_header <- scan(paste(c(directory,folderid,fileid,"_closeloop_kinematics.txt"),collapse = ''),what ="character",skip = 11,nlines = 1) # Nikunj - 07/01/16
         block_likert <- type.convert(kin_header[!is.na(type.convert(kin_header,na.strings = c("Survey","Responses:")))])
         if(use_simulated_closeloop_results == 1){
           cl_BMI_data <- readMat(paste(c(directory,sim_results_folderid,sim_results_fileid,"_closeloop_results.mat"),collapse = ''),fixNames = FALSE)
@@ -159,7 +153,8 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
           closeloop_mat_filename <- dir(path = paste(c(directory,folderid),collapse = ''),pattern = paste(c(fileid,"_closeloop_results"),collapse = ''))
           if (length(closeloop_mat_filename)==0){
             BMI_mat_file_exists <- 0
-          }else{
+          }
+          else{
             BMI_mat_file_exists <- 1
             cl_BMI_data <- readMat(paste(c(directory,folderid,closeloop_mat_filename),collapse = ''),fixNames = FALSE)
           }
@@ -171,13 +166,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
           #move_counts_index <- which(cl_BMI_data$move_counts == max(cl_BMI_data$all_cloop_cnts_threshold))  # Also used to find feature_index
           # Correction for calculating move_counts_index
           move_counts_index <- which((cl_BMI_data$all_cloop_cnts_threshold - cl_BMI_data$move_counts) <= 0)
-          if (length(which(cl_BMI_data$marker_block[,2]==50)) < 2){
-            EMG_data_interval <- cl_BMI_data$marker_block[which(cl_BMI_data$marker_block[,2]==50),1]
-            EMG_data_interval <- append(EMG_data_interval, cl_BMI_data$marker_block[size(cl_BMI_data$marker_block)[1],1])
-          } 
-          else{
-            EMG_data_interval <- cl_BMI_data$marker_block[which(cl_BMI_data$marker_block[,2]==50),1]
-          }        
+          EMG_data_interval <- cl_BMI_data$marker_block[which(cl_BMI_data$marker_block[,2]==50),1]
           Biceps_EMG_rms_resampled <- resample(cl_BMI_data$processed_emg[1,],500,3.333)
           Biceps_EMG_rms_resampled <- Biceps_EMG_rms_resampled[EMG_data_interval[1]:EMG_data_interval[2]]
           #Biceps_EMG_rms_resample1000 <- resample(Biceps_EMG_rms_resampled,1000,500)
@@ -185,7 +174,8 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
           Triceps_EMG_rms_resampled <- Triceps_EMG_rms_resampled[EMG_data_interval[1]:EMG_data_interval[2]]
           #Triceps_EMG_rms_resample1000 <- resample(Triceps_EMG_rms_resampled,1000,500)
           biceps_thr <- EMG_biceps_thr[bc]
-          triceps_thr <- EMG_triceps_thr[bc]          
+          triceps_thr <- EMG_triceps_thr[bc]
+          
         }
         print(c("Working with block", toString(closedloop_Block_num[bc])))
         
@@ -194,8 +184,8 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
         # Trig2 - response
         # Trig_Mov - Movement onset
         colnames(cl_kinematics_data)[c(1,17,18,19)] <- c("time","Target_shown","Target_reached","Move_onset")
-        colnames(cl_kinematics_data)[c(22,21)] <- c("Catch","Timeout") # Timeout is 21 and catch is 22 on 9/13/2015. Previously these were swapped
-        #colnames(cl_kinematics_data)[c(22,21)] <- c("Timeout","Catch") # Swapped back - Nikunj 07/01/16
+        #colnames(cl_kinematics_data)[c(22,21)] <- c("Catch","Timeout") # Timeout is 21 and catch is 22 on 9/13/2015. Previously these were swapped
+        colnames(cl_kinematics_data)[c(22,21)] <- c("Timeout","Catch") # Swapped back - Nikunj 07/01/2016
         colnames(cl_kinematics_data)[c(2,7,12)] <- c("Elbow_position","Elbow_velocity","Elbow_torque")
         
         # Get first sample when a trigger signal was generated
@@ -225,24 +215,24 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
           cl_kinematics_data <- cl_kinematics_data[-c(temp_intersect[1]:nrow(cl_kinematics_data)),]
         }
         
-        # Remove extra Target_reached triggers generated for likert input - 9/13/2015
-        target_shown_instants <- which(cl_kinematics_data$Target_shown == 1)
-        target_reached_instances <- which(cl_kinematics_data$Target_reached == 1)
-        new_Target_reached <- numeric(length(cl_kinematics_data$Target_reached))
-        for (j in seq_along(target_shown_instants)){        
-          val_instant <- which((target_reached_instances - target_shown_instants[j]) >= 0)
-            if(!isempty(val_instant)){
-              nearest_target_reached_instance <- target_reached_instances[val_instant[1]]
-              if(1 %in% cl_kinematics_data$Timeout[target_shown_instants[j]:nearest_target_reached_instance] == 1){
-                # do nothing
-              }
-              else{
-                # use this as target_reached trigger
-                new_Target_reached[nearest_target_reached_instance] <- 1
-              }
-            }      
-        }
-        cl_kinematics_data$Target_reached <- new_Target_reached  
+        # Remove extra Target_reached triggers generated for likert input - 9/13/2015 - Nikunj 07/01/16
+#         target_shown_instants <- which(cl_kinematics_data$Target_shown == 1)
+#         target_reached_instances <- which(cl_kinematics_data$Target_reached == 1)
+#         new_Target_reached <- numeric(length(cl_kinematics_data$Target_reached))
+#         for (j in seq_along(target_shown_instants)){        
+#           val_instant <- which((target_reached_instances - target_shown_instants[j]) >= 0)
+#             if(!isempty(val_instant)){
+#               nearest_target_reached_instance <- target_reached_instances[val_instant[1]]
+#               if(1 %in% cl_kinematics_data$Timeout[target_shown_instants[j]:nearest_target_reached_instance] == 1){
+#                 # do nothing
+#               }
+#               else{
+#                 # use this as target_reached trigger
+#                 new_Target_reached[nearest_target_reached_instance] <- 1
+#               }
+#             }      
+#         }
+#         cl_kinematics_data$Target_reached <- new_Target_reached  
   
         # Filter the velocity and compute magnitude
         #filt_vel <- abs(sgolayfilt(cl_kinematics_data$Elbow_velocity,p = 1,n = 201))  # No filtering to avoid any time delays
@@ -376,7 +366,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
               bmi_data_trial_interval <- intersect(which(adj_marker_block_time_stamps >= adj_start_of_trial[k]),
                         which(adj_marker_block_time_stamps < adj_end_of_trial[k]))
               
-              if (length(bmi_data_trial_interval) <= 1){ # condition changed from '==0' on 5-2-2016
+              if (length(bmi_data_trial_interval) == 0){
                 
                 cat("BMI data interval not found!!\n")
                 Intent_EEG_epochs_trial <- array(0, 
@@ -399,8 +389,8 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
                 cl_trial_stats$EEG_EMG_decisions[k] <- 1
               }
               
-              try(plot(Biceps_EMG_rms_resampled[adj_start_of_trial[k]:adj_end_of_trial[k]],type = "l",col = "red"), silent = TRUE)
-              try(lines(Triceps_EMG_rms_resampled[adj_start_of_trial[k]:adj_end_of_trial[k]],col = "blue"), silent = TRUE) 
+              plot(Biceps_EMG_rms_resampled[adj_start_of_trial[k]:adj_end_of_trial[k]],type = "l",col = "red")
+              lines(Triceps_EMG_rms_resampled[adj_start_of_trial[k]:adj_end_of_trial[k]],col = "blue")
               # Detect if EMG present - Added 07/01/16
               if ((length(which(Biceps_EMG_rms_resampled[adj_start_of_trial[k]:adj_end_of_trial[k]] > biceps_thr)) > 0) ||
                 (length(which(Triceps_EMG_rms_resampled[adj_start_of_trial[k]:adj_end_of_trial[k]] > triceps_thr)) > 0)){
@@ -434,8 +424,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
                 #spatial_avg_index <- round((cl_BMI_data$marker_block[f_index,1]/500)*20) # Resample to 20 Hz - Index for Overall_spatial_chan_avg        
                 
                 # Directly get classification features - (Dec9,2014) No longer used because of imprecision in sample number. Instead used Overall_spatial_chan_avg
-                 cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])
-                
+                cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])            
                 
                 # Segment the Overall Spatial Avg and use it to derive features
                 spatial_avg_sample_correction <- round(((cl_BMI_data$marker_block[which(cl_BMI_data$marker_block[,2]==50)[1],1] - cl_BMI_data$marker_block[1,1])/500)*20)
@@ -457,8 +446,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
                               which(round(cl_BMI_data$all_feature_vectors[2,],4) %in% round(cal_feature_vec[2],4))),
                     intersect(which(round(cl_BMI_data$all_feature_vectors[3,],4) %in% round(cal_feature_vec[3],4)),
                               which(round(cl_BMI_data$all_feature_vectors[4,],4) %in% round(cal_feature_vec[4],4))))
-                    
-
+                
                     if (length(intersection_index) != 0){
                       
                       correction_for_spatial_avg_index <- intersection_index - feature_index
@@ -473,8 +461,8 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
                                              sqrt((spatial_avg_epoch - Classifier$smart_Mu_move)%*%(inv(Classifier$smart_Cov_Mat))%*%(t(spatial_avg_epoch - Classifier$smart_Mu_move)))
                       ))
                       
-                      #cat("Cal: ",cal_feature_vec,"\t","Meas: ", toString(t(cl_BMI_data$all_feature_vectors[,feature_index])),"\t",
-                      #    "spatial_index: ", toString(spatial_avg_index), "\n")
+                      cat("Cal: ",cal_feature_vec,"\t","Meas: ", toString(t(cl_BMI_data$all_feature_vectors[,feature_index])),"\t",
+                          "spatial_index: ", toString(spatial_avg_index), "\n")
                                 
                       # Segment processed_eeg and Overall_spatial_avg arrays according to the instant when intent was detected
                       # Segment duration = [-2.5s to +1s] w.r.t instant when intent is detected
@@ -506,7 +494,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
                     }
                     else{
                       # Note: intersection_index is NULL then correction to spatial_chan_avg_index is 0
-                      #cat("Feature vector intersection not found!!\n")
+                      cat("Feature vector intersection not found!!\n")
                       Intent_EEG_epochs_trial <- array(0, 
                                                        dim = c(dim(cl_BMI_data$processed_eeg)[1]+2,
                                                                (epoch_end_time-epoch_start_time)*resamp_Fs+1,
@@ -605,21 +593,18 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
     
   
   }
-  cat("Session Number:       ", closeloop_Sess_num, "\n")
   cat("Block Numbers:       ", closedloop_Block_num, "\n")
   cat("Successful Trials:   ", Successful_trials, "\n")
   #cat("Successful EEG- EMG Trials:   ", Successful_EEG_EMG_trials, "\n")
   cat("Total Num of trials: ", Total_num_of_trials, "\n")
   cat("Failed Catch trials: ", Failed_Catch_trials, "\n")
   cat("Total Catch Trials:  ", Catch_trials,"\n")
-  #cat("Are EEG_EMG_decisions and Intent_detected identifical? ", 
-  #    identical(cl_session_stats$Intent_detected,cl_session_stats$EEG_EMG_decisions), "  ",
-  #    which(cl_session_stats$Intent_detected != cl_session_stats$EEG_EMG_decisions), "\n")
+  cat("Are EEG_EMG_decisions and Intent_detected identifical? ", 
+      identical(cl_session_stats$Intent_detected,cl_session_stats$EEG_EMG_decisions), "  ",
+      which(cl_session_stats$Intent_detected != cl_session_stats$EEG_EMG_decisions), "\n")
   cat("Total blocks = ", length(closedloop_Block_num), 
       ", TPR = ", 100*sum(Successful_trials)/sum(Total_num_of_trials),
-      "%, FPR = ", 100*sum(Failed_Catch_trials)/sum(Catch_trials), 
-      "%, Accuracy = ", 100*((sum(Successful_trials)+sum(Catch_trials)-sum(Failed_Catch_trials))/(sum(Total_num_of_trials) + sum(Catch_trials))),
-      "\n")
+      "%, FPR = ", 100*sum(Failed_Catch_trials)/sum(Catch_trials), "%")
   
   if (use_simulated_closeloop_results == 1){
     save_filename <- paste(c(directory,sim_results_folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"B_",simulation_mode,"_cloop_statistics.csv"),collapse = '')
@@ -643,8 +628,8 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
   # Used for generating raster plot - Raster plot for paper
   #save_matfile1 <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_block",toString(closedloop_Block_num),"_cloop_kinematic_params.mat"),collapse = '')
   #writeMat(save_matfile1,cl_kinematic_params = cl_kinematic_params, append = FALSE)
-   cl_session_stats # Commented on 5-2-2016 for running stand alone function
-} #Nikunj - 5/2/2016
+  cl_session_stats
+#} #Nikunj - 01/07/16
 
 
 

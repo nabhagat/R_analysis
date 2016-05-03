@@ -27,8 +27,8 @@ plot_intent_only = 0;
 plot_CoV = 0;
 plot_tpr_fpr_comparison_old = 0;
 plot_tpr_fpr_comparison_new = 0;
-plot_performance_day4_day5 = 0;
-plot_performance_swapped_classifiers = 1;
+plot_performance_day4_day5 = 1;
+plot_performance_swapped_classifiers = 0;
 compare_closed_loop_features = 0;
 plot_with_likert =  0;
 
@@ -1981,12 +1981,12 @@ if plot_performance_day4_day5 == 1
             for subj_n = 1:4
                 for n = 1:length(Sess_nums)
                     ses_n = Sess_nums(n);
-                    folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names_reordered{subj_n} '\' Subject_names_reordered{subj_n} '_Session' num2str(ses_n) '\'];
-                    fileid = [folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'];
+                    folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_names_reordered{subj_n} '\' Subject_names_reordered{subj_n} '_Session' num2str(ses_n) '\'];
+                    fileid = [folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_results.csv'];
                     if ~exist(fileid,'file')
                         continue
                     end
-                    cl_ses_data = dlmread([folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_statistics.csv'],',',7,1); 
+                    cl_ses_data = dlmread([folder_path Subject_names_reordered{subj_n} '_ses' num2str(ses_n) '_cloop_results.csv'],',',7,1); 
                     len_attempt_trials = length(find(cl_ses_data(:,4)== 1));
                     len_catch_trials = length(find(cl_ses_data(:,4)== 2));
                     
@@ -2015,15 +2015,25 @@ if plot_performance_day4_day5 == 1
                         ind_eeg_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,5) == 1));
                         EEG_EMG_TPR = length(ind_eeg_emg_success_valid_trials)/length(ind_valid_trials);
                         EEG_EMG_FPR = length(ind_eeg_emg_failed_catch_trials)/length(ind_catch_trials);
-
+                        
+                        % EMG-only 
+                        ind_emg_success_valid_trials = find((block_performance(:,4) == 1) & (block_performance(:,22) == 1)); % col 22 - EMG decisions
+                        ind_emg_failed_catch_trials = find((block_performance(:,4) == 2) & (block_performance(:,22) == 1));
+                        EMG_TPR = length(ind_emg_success_valid_trials)/length(ind_valid_trials);
+                        EMG_FPR = length(ind_emg_failed_catch_trials)/length(ind_catch_trials);
+                        
                         tpr_fpr_performance = [tpr_fpr_performance;...
-                                            [subj_n ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR]];                       
+                                            [subj_n ses_n block_n block_TPR block_FPR EEG_TPR EEG_FPR EEG_EMG_TPR EEG_EMG_FPR EMG_TPR EMG_FPR]];                       
                     end % ends block_n loop
                     mean_sd_tpr_fpr_4_5(subjects_order(subj_n),4*n-3:4*n) = ...
                         [ mean(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),8)),...
                           std(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),8)),...
                           mean(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),9)),...
                           std(tpr_fpr_performance(find(tpr_fpr_performance(:,1) == subj_n & tpr_fpr_performance(:,2) == ses_n),9))];
+                      
+% %                       mean(tpr_fpr_performance,1)
+% %                       std(tpr_fpr_performance,1)
+% %                       tpr_fpr_performance = [];
                 end % ends ses_n loop               
             end % ends subj_n loop
 
