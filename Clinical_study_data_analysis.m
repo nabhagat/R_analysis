@@ -10,25 +10,29 @@
 %------------------------------------------------------------------------------------------------------------------------
 clear;
 paper_font_size = 10;
+x_axis_deviation = [0.15,0.05,-0.05,-0.15];
 directory = 'C:\NRI_BMI_Mahi_Project_files\All_Subjects\';
-Subject_name = {'S9007','S9009','S9010','S9011'};
-Subject_labels = {'S1','S2','S3','S4'};
+Subject_name = {'S9011','S9010','S9009','S9007'};
+Subject_number = [9011,9010,9009,9007];
+Subject_labels = {'S4','S3','S2','S1'};
 Subject_velocity_threshold = [1.19,1.99,1.03,1.16];
-ACC_marker_color = {'-sk','-ok','-^k','-vk'};
+ACC_marker_color = {'-vr','-^m','-ok','-sb'};
+Latency_marker_color = {'vr','^m','ok','sb'};
 TPR_marker_color = {'--sk','--ok','--*k','--^k'};
 FPR_marker_color = {'-sk','-ok','*k','^k'};
-Marker_face_color = {'w','k','w','k'};
+Marker_face_color = {'r','m','w','b'};
 Sig_line_color = {'--k','--k','--k','--k'};
 boxplot_color = {'r','r'};
-likert_marker_color = {'-sb','-or'};
+likert_marker_color = {'-sk','-ok','-^k','-vk'};
 h_acc = zeros(length(Subject_name),1);
 h_tpr = zeros(length(Subject_name),1);
 h_fpr = zeros(length(Subject_name),1);
 h_intent = zeros(length(Subject_name),1);
 h_likert = zeros(length(Subject_name),1);
 
-plot_tpr_fpr = 1;
+plot_tpr_fpr = 0;
 plot_blockwise_accuracy = 0;
+plot_movement_smoothness = 1;
 
 if plot_blockwise_accuracy == 1
      figure('Position',[700 100 7*116 6*116]); 
@@ -299,12 +303,13 @@ if plot_blockwise_accuracy == 1
 end
 
 if plot_tpr_fpr == 1
-     figure('Position',[700 100 7*116 2.5*116]); 
-     Cplot = tight_subplot(1,1,[0.05 0.02],[0.2 0.05],[0.1 0.05]);
+     figure('Position',[700 100 7*116 7.5*116]); 
+     Cplot = tight_subplot(3,1,[0.05 0.02],[0.2 0.05],[0.1 0.05]);
      Subject_wise_performance = [];
      
     for subj_n = 1:length(Subject_name)
         bmi_performance = [];
+         bmi_performance_blockwise = [];
                
         fileid = dir([directory 'Subject_' Subject_name{subj_n} '\' Subject_name{subj_n} '_session_wise_results*']);
         results_filename = [directory 'Subject_' Subject_name{subj_n} '\' fileid.name];
@@ -340,8 +345,10 @@ if plot_tpr_fpr == 1
             
             subject_intent_per_min  = [subject_intent_per_min; [unique_session_nos(ses_num).*ones(length(Session_Intent_per_min),1) Session_Intent_per_min]];
             
-            Session_detection_latency_mean = mean(session_performance(ind_success_valid_trials,22));
-            Session_detection_latency_std = std(session_performance(ind_success_valid_trials,22));
+            session_latencies = session_performance(ind_success_valid_trials,22);
+            session_latencies(session_latencies < -1000 | session_latencies > 1000) = [];
+            Session_detection_latency_mean = mean(session_latencies);
+            Session_detection_latency_std = std(session_latencies);
             Session_likert_mean = mean(session_performance(:,18));
             Session_likert_std = std(session_performance(:,18));
             
@@ -353,12 +360,32 @@ if plot_tpr_fpr == 1
                 %ind_success_valid_trials = find((block_performance(:,5) == 1) & (block_performance(:,6) == 1));
                 %time_to_trigger_success_valid_trials = block_performance(ind_success_valid_trials,7); %col 7 - Time to Trigger
                 %Block_Intent_per_min = 60./time_to_trigger_success_valid_trials;
+                
+                block_ind_valid_trials = find(block_performance(:,5) == 1);  % col 5 - Valid(1) or Catch(2)
+                block_ind_success_valid_trials = find((block_performance(:,5) == 1) & (block_performance(:,6) == 1)); % col 5 - Intent detected
+                block_TPR = length(block_ind_success_valid_trials)/length(block_ind_valid_trials);      % TPR
+
+                block_ind_catch_trials = find(block_performance(:,5) == 2);
+                block_ind_failed_catch_trials = find((block_performance(:,5) == 2) & (block_performance(:,6) == 1));
+                block_ind_success_catch_trials = find((block_performance(:,5) == 2) & (block_performance(:,6) == 0));
+                block_FPR = length(block_ind_failed_catch_trials)/length(block_ind_catch_trials); %FPR
+
+                block_accuracy = (length(block_ind_success_valid_trials) + length(block_ind_success_catch_trials))/...
+                                                 (length(block_ind_valid_trials) + length(block_ind_catch_trials));
+                                             
+                bmi_performance_blockwise = [bmi_performance_blockwise;...
+                                                                           [subj_n unique_session_nos(ses_num) unique_block_nos(block_num) block_TPR block_FPR block_accuracy] ];
+                                                                       
             end
 
+            mean_Session_accuracy_blockwise = mean(bmi_performance_blockwise((bmi_performance_blockwise(:,1) == subj_n) & (bmi_performance_blockwise(:,2) == unique_session_nos(ses_num)),6));
+            std_Session_accuracy_blockwise = std(bmi_performance_blockwise((bmi_performance_blockwise(:,1) == subj_n) & (bmi_performance_blockwise(:,2) == unique_session_nos(ses_num)),6));
+            
             bmi_performance = [bmi_performance;...
                                             [subj_n unique_session_nos(ses_num) session_TPR session_FPR length(ind_valid_trials) length(ind_catch_trials)...
                                                             mean(Session_Intent_per_min) std(Session_Intent_per_min) median(Session_Intent_per_min) Session_likert_mean Session_likert_std...
-                                                            Session_detection_latency_mean Session_detection_latency_std Session_accuracy]];   
+                                                            Session_detection_latency_mean Session_detection_latency_std Session_accuracy...
+                                                            mean_Session_accuracy_blockwise std_Session_accuracy_blockwise]];   
             %        1          2                 3                  4                 5                        6                                                    7 
             % [subj_n  ses_num  ses_TPR    ses_FPR   #valid_trials      #catch_trials          mean(session_intents/min)
             %                    8                                          9                                                       10                              11
@@ -374,10 +401,10 @@ if plot_tpr_fpr == 1
         ylim([0 110]); 
         xlim([0.5 13]);
         set(gca,'Ytick',[0 50 100],'YtickLabel',{'0' '50' '100'});
-        set(gca,'Xtick',1:12,'Xticklabel',{'1' '2' '3' '4' '5' '6' '7' '8' '9' '10' '11' '12'});
+        set(gca,'Xtick',1:12,'Xticklabel',{' '});
         %title('Closed-loop BMI performance for ongoing clinical study (4 subjects)','FontSize',paper_font_size);
         ylabel({'BMI Accuracy (%)'},'FontSize',paper_font_size);
-         xlabel('Sessions','FontSize',10);
+         %xlabel('Sessions','FontSize',10);
          
         mlr_acc = LinearModel.fit(1:size(bmi_performance,1),100*bmi_performance(:,14));
         if mlr_acc.coefTest <= 0.05
@@ -397,7 +424,7 @@ if plot_tpr_fpr == 1
 %             set(gca,'Xgrid','on');
 %             set(gca,'Ygrid','on');
 %         end
-        set(gca,'Xgrid','on');
+        set(gca,'Xgrid','off');
         set(gca,'Ygrid','on');
         hold off;
         
@@ -456,80 +483,93 @@ if plot_tpr_fpr == 1
 %         set(gca,'Ygrid','on');
 %         hold off;
         
-%         axes(Cplot(3)); hold on;
-%         CoV = bmi_performance(:,8)./bmi_performance(:,7);
-%         h_cov = plot(1:size(bmi_performance,1), CoV,'-xk','MarkerFaceColor','none','LineWidth',1);
-%         ylim([0 5]); 
-%         xlim([0.5 13]);
-%         set(gca,'Ytick',[0 5],'YtickLabel',{'0' '5'});
-%         set(gca,'Xtick',1:12,'Xticklabel',' ');
-%         ylabel({'Coefficient of';'variation'},'FontSize',paper_font_size);
-%         mlr_CoV = LinearModel.fit(1:size(bmi_performance,1),CoV);
-%         if mlr_CoV.coefTest <= 0.05
-%             line_regress = [ones(2,1) [1; size(bmi_performance,1)]]*mlr_CoV.Coefficients.Estimate;
-%             plot(gca,[0  size(bmi_performance,1)+0.25],line_regress,'--k','LineWidth',0.5); hold on;
-%             text(size(bmi_performance,1)+0.25,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_CoV.Coefficients.Estimate(2))},'FontSize',paper_font_size);
-%         end
-%         set(gca,'Xgrid','on');
-%         set(gca,'Ygrid','on');
-%         hold off;
-
-%         axes(Cplot(3));hold on;
-%         %h_latency = errorbar(1:size(bmi_performance,1), bmi_performance(:,12)./1000, bmi_performance(:,13)./1000, '-ok','MarkerFaceColor','k','LineWidth',1);
-%         overall_latency = subject_study_data((subject_study_data (:,22) < 1000) & (subject_study_data (:,22) > -1000),22);
-%         [f_lat,x_lat] = hist(overall_latency, -1000:20:1000);
-%         h_latency_2 = bar(x_lat,f_lat);
-%         ylim([-1 1]); 
-%         xlim([0.5 13]);
-%         set(gca,'Ytick',[-1 -0.5 0 0.5 1],'YtickLabel',{'-1' '-0.5' '0' '0.5' '1'});
-%         set(gca,'Xtick',1:12,'Xticklabel',{' '});
-%         ylabel({'Intent detection';'latency (sec.)'},'FontSize',paper_font_size);
-%         %xlabel('Sessions','FontSize',10);
-%         plot1_pos = get(Cplot(1),'Position');
-%         latencyplot_pos = get(gca,'Position');
-%         set(gca,'Position',[plot1_pos(1) latencyplot_pos(2) plot1_pos(3) latencyplot_pos(4)]);
-%         mlr_latency = LinearModel.fit(1:size(bmi_performance,1),bmi_performance(:,12));
-%         if mlr_latency.coefTest <= 0.05
-%             line_regress = [ones(2,1) [1; size(bmi_performance,1)]]*mlr_latency.Coefficients.Estimate;
-%             plot(gca,[0  size(bmi_performance,1)+0.25],line_regress,'--k','LineWidth',0.5); hold on;
-%             text(size(bmi_performance,1)+0.25,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_latency.Coefficients.Estimate(2))},'FontSize',paper_font_size);
-%         end
-%         set(gca,'Xgrid','on');
-%         set(gca,'Ygrid','on');
-%         hold off;
+        axes(Cplot(2));hold on;
+        h_latency = errorbar([1:size(bmi_performance,1)]+x_axis_deviation(subj_n), bmi_performance(:,12)./1000, bmi_performance(:,13)./1000, Latency_marker_color{subj_n},'MarkerFaceColor',Marker_face_color{subj_n},'LineWidth',1);
+        ylim([-1 1]); 
+        xlim([0.5 13]);
+        set(gca,'Ytick',[-1 -0.5 0 0.5 1],'YtickLabel',{'-1' '-0.5' '0' '0.5' '1'});
+        set(gca,'Xtick',1:12,'Xticklabel',{' '});
+        ylabel({'Intent detection';'latency (sec.)'},'FontSize',paper_font_size);
+        %xlabel('Sessions','FontSize',10);
+        plot1_pos = get(Cplot(1),'Position');
+        latencyplot_pos = get(gca,'Position');
+        set(gca,'Position',[plot1_pos(1) latencyplot_pos(2) plot1_pos(3) latencyplot_pos(4)]);
+        mlr_latency = LinearModel.fit(1:size(bmi_performance,1),bmi_performance(:,12));
+        if mlr_latency.coefTest <= 0.05
+            line_regress = [ones(2,1) [1; size(bmi_performance,1)]]*mlr_latency.Coefficients.Estimate;
+            %plot(gca,[0  size(bmi_performance,1)+0.25],line_regress,'--k','LineWidth',0.5); hold on;
+            %text(size(bmi_performance,1)+0.25,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_latency.Coefficients.Estimate(2))},'FontSize',paper_font_size);
+        end
+        set(gca,'Xgrid','off');
+        set(gca,'Ygrid','on');
+        hold off;
         
 %         figure;
 %         
 %         [f1,x1] = hist(subject_study_data(:,22),-500:10:500);
 %         h_patch(1) = jbfill(x1,f1./trapz(x1,f1), zeros(1,length(-500:10:500)),'r','r',1,0.5);
         
-%         axes(Cplot(4));hold on;
-%         h_likert(subj_n) = errorbar(1:size(bmi_performance,1), bmi_performance(:,10), bmi_performance(:,11), likert_marker_color{subj_n},'MarkerFaceColor',boxplot_color{subj_n},'LineWidth',1);
-%         ylim([0 4]); 
-%         xlim([0.5 13]);
-%         set(gca,'Ytick',[1 2 3],'YtickLabel',{'1' '2' '3'});
-%         set(gca,'Xtick',1:12,'Xticklabel',{'1' '2' '3' '4' '5' '6' '7' '8' '9' '10' '11' '12'});
-%         ylabel({'Subject rating'; '(Likert scale)'},'FontSize',paper_font_size);
-%         xlabel('Sessions','FontSize',10);
-%         mlr_likert = LinearModel.fit(1:size(bmi_performance,1),bmi_performance(:,10));
-%         if mlr_likert.coefTest <= 0.05
-%             line_regress = [ones(2,1) [1; size(bmi_performance,1)]]*mlr_likert.Coefficients.Estimate;
-%             plot(gca,[0  size(bmi_performance,1)+0.25],line_regress,Sig_line_color{subj_n},'LineWidth',0.5); hold on;
-%             text(size(bmi_performance,1)+0.25,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_likert.Coefficients.Estimate(2))},'FontSize',paper_font_size);
-%         end
-%         set(gca,'Xgrid','on');
-%         set(gca,'Ygrid','on');
-%         hold off;
+        axes(Cplot(3));hold on;
+        h_likert(subj_n) = errorbar([1:size(bmi_performance,1)]+x_axis_deviation(subj_n), bmi_performance(:,10), bmi_performance(:,11), Latency_marker_color{subj_n},'MarkerFaceColor',Marker_face_color{subj_n},'LineWidth',1);
+        ylim([0 4]); 
+        xlim([0.5 13]);
+        set(gca,'Ytick',[1 2 3],'YtickLabel',{'1' '2' '3'});
+        set(gca,'Xtick',1:12,'Xticklabel',{'1' '2' '3' '4' '5' '6' '7' '8' '9' '10' '11' '12'});
+        ylabel({'Subject rating'; '(Likert scale)'},'FontSize',paper_font_size);
+        xlabel('Sessions','FontSize',10);
+        mlr_likert = LinearModel.fit(1:size(bmi_performance,1),bmi_performance(:,10));
+        if mlr_likert.coefTest <= 0.05
+            line_regress = [ones(2,1) [1; size(bmi_performance,1)]]*mlr_likert.Coefficients.Estimate;
+            %plot(gca,[0  size(bmi_performance,1)+0.25],line_regress,Sig_line_color{subj_n},'LineWidth',0.5); hold on;
+            %text(size(bmi_performance,1)+0.25,line_regress(2)+0.5,{sprintf(' %.2f*',mlr_likert.Coefficients.Estimate(2))},'FontSize',paper_font_size);
+        end
+        set(gca,'Xgrid','off');
+        set(gca,'Ygrid','on');
+        hold off;
              
         
         
         
      Subject_wise_performance = [Subject_wise_performance; bmi_performance];   
     end
-    legendflex(h_tpr,Subject_labels,'ncol',2, 'ref',Cplot(1),'anchor',[5 5],'buffer',[0 5],'box','on','xscale',1,'padding',[2 1 1], 'title', 'Subject labels');
+    
+    legendflex(fliplr(h_tpr')',fliplr(Subject_labels),'ncol',1, 'ref',Cplot(1),'anchor',[3 1],'buffer',[0 5],'box','on','xscale',1,'padding',[2 1 1], 'title', 'Subject labels');
     %annotation('textbox',[0 0 0.1 0.07],'String','*\itp\rm < 0.05','EdgeColor','none');
-    Subject_wise_mean = mean(Subject_wise_performance);
-    Subject_wise_std = std(Subject_wise_performance);
-    Subject_1_3_perf = Subject_wise_performance((Subject_wise_performance(:,1) == 1 | Subject_wise_performance(:,1) == 3),:);
+    Group_mean = mean(Subject_wise_performance);
+    Group_std = std(Subject_wise_performance);
+    mean_Subject_wise_perf_mean = [];
+    mean_Subject_wise_perf_std = [];
+    max_Subject_wise_intrasession_variability = [];
+     for subj_n = 1:length(Subject_name)
+         mean_Subject_wise_perf_mean = [mean_Subject_wise_perf_mean;...
+                                                                mean(Subject_wise_performance(Subject_wise_performance(:,1) == subj_n,4))];
+         mean_Subject_wise_perf_std = [mean_Subject_wise_perf_std;...
+                                                                std(Subject_wise_performance(Subject_wise_performance(:,1) == subj_n,4))];
+         max_Subject_wise_intrasession_variability = [max_Subject_wise_intrasession_variability;
+                                                                max(Subject_wise_performance(Subject_wise_performance(:,1) == subj_n,16))];
+     end
     %figure; boxplot(Subject_wise_performance(:,4),Subject_wise_performance(:,1))
+end
+
+if plot_movement_smoothness == 1
+    load('C:\NRI_BMI_Mahi_Project_files\All_Subjects\Smoothness_coefficient_S9007-9010.mat');
+    kin_smoothness = s7_s9_s10_smth;
+    figure('Position',[700 100 7*116 2.5*116]);
+    Cplot = tight_subplot(1,1,[0.05 0.02],[0.15 0.05],[0.1 0.05]);
+    axes(Cplot(1));hold on;
+    for subj_n = 2: length(Subject_name)
+        kin_performance = kin_smoothness(kin_smoothness(:,1) == Subject_number(subj_n),:);
+        errorbar([0:12]+x_axis_deviation(subj_n), kin_performance(end-12:end,7), kin_performance(end-12:end,8), Latency_marker_color{subj_n},'MarkerFaceColor',Marker_face_color{subj_n},'LineWidth',1);
+    end
+    ylim([-1 1.2]); 
+    xlim([-0.5 12.5]);
+    set(gca,'Ytick',[-1 0 1],'YtickLabel',{'-1' '0' '1'});
+    set(gca,'Xtick',0:12,'Xticklabel',{'Baseline' '1' '2' '3' '4' '5' '6' '7' '8' '9' '10' '11' '12'});
+    %ylabel({'Subject rating'; '(Likert scale)'},'FontSize',paper_font_size);
+    xlabel('Sessions','FontSize',paper_font_size);
+    set(gca,'Xgrid','off');
+    set(gca,'Ygrid','on');
+    hold off;
+        
+    
 end
