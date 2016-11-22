@@ -1,9 +1,9 @@
 # BMI Mahi closed-loop data analysis
 # setwd("/home//nikunj//Documents//R_programs") 
-# library(signal)
-# library(R.matlab)
-# library(pracma)
-# library(abind)
+library(signal)
+library(R.matlab)
+library(pracma)
+library(abind)
 ############################## FUNCTIONS
 
 ExtractUniqueTriggers <- function(TrigIn, lookback = 1, polarity = 0){
@@ -13,7 +13,7 @@ ExtractUniqueTriggers <- function(TrigIn, lookback = 1, polarity = 0){
   if (polarity == 1){
     index <- which(TrigIn == 5) 
     for(i in seq_along(index)){
-    
+      # Added on to counter the case when first TrigIn[1] = 5
       if((i == 1) && (TrigIn[index[i]]==5)){
         Unique_Index <- c(Unique_Index, index[i])
       TrigOut[index[i]] <- 0;        
@@ -29,6 +29,13 @@ ExtractUniqueTriggers <- function(TrigIn, lookback = 1, polarity = 0){
   else{
     index <- which(TrigIn == 0) 
     for(i in seq_along(index)){
+      
+      # Added on 9-8-2016 to counter the case when first TrigIn[1] = 0
+      if((i == 1) && (TrigIn[index[i]]==0)){ 
+        Unique_Index <- c(Unique_Index, index[i])
+        TrigOut[index[i]] <- 1;        # Put 1 here in order to register this as a trigger
+        next
+      }
       
       if ((TrigIn[index[i]]==0)  && (TrigIn[index[i]-1]==5)){
         Unique_Index <- c(Unique_Index,index[i])
@@ -66,25 +73,30 @@ find_next_response_index <- function(response_trigs,catch_trigs){
 
 
 ################################### MAIN PROGRAM ############################################################# 
-analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Sess_num,closedloop_Block_num){ 
+# analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Sess_num,closedloop_Block_num,Subj_vel_threshold,
+                                           # Calib_cond_no,BMIClassifier_Training_Sess_num,BMIClassifier_Training_Block_num,Subject_impaired_side){
 
-  # Changes to be made
-  #directory <- "C:/NRI_BMI_Mahi_Project_files/All_Subjects/"
-  #Subject_name <- "S9011"              #1 
-  #closeloop_Sess_num <- 14             #2
-  #closedloop_Block_num <- c(4:11)      #3
+  # Changes to be made if running this function independently
+  directory <- "D:/NRI_Project_Data/Clinical_study_Data/"
+  Subject_name <- "S9011"             #1
+  closeloop_Sess_num <- 14             #2
+  closedloop_Block_num <- c(4:11)      #3
+  Calib_cond_no  <- 1 #Comment                              #5 1 - Backdrive, 3-Triggered modes
+  BMIClassifier_Training_Sess_num <- 2 #Comment
+  BMIClassifier_Training_Block_num <- 170 #Comment
+  Subj_vel_threshold <- 1.16 # comment
+  Subject_impaired_side <- "left" # comment for non-function use
 
-  velocity_threshold <- (1.16)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
-  Cond_num  <- 1                             #5 1 - Backdrive, 3-Triggered modes
-  use_simulated_closeloop_results <- 0
-  simulation_mode <- "UD" # UD - use simulated user-driven mode; UT - use simulated user-triggered mode
+  velocity_threshold <- (Subj_vel_threshold)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
   
-  Training_Sess_num <- "2"
-  Training_Block_num <- "170"
+  use_simulated_closeloop_results <- 0
+  simulation_mode <- "UD" # UD - use simulated user-driven mode; UT - use simulated user-triggered mode, NOT USED as of 9-1-2016
+  
 
   # Load Classifier Model used during closed-loop
-  Training_folderid <- paste(c("Subject_",Subject_name,"/",Subject_name,"_Session",Training_Sess_num,"/"),collapse = '')
-  Training_fileid <- paste(c(Subject_name,"_ses",Training_Sess_num,"_cond",toString(Cond_num),"_block",Training_Block_num),collapse = '')
+  Training_folderid <- paste(c("Subject_",Subject_name,"/",Subject_name,"_Session",toString(BMIClassifier_Training_Sess_num),"/"),collapse = '')
+  Training_fileid <- paste(c(Subject_name,"_ses",toString(BMIClassifier_Training_Sess_num),"_cond",toString(Calib_cond_no),
+                             "_block",toString(BMIClassifier_Training_Block_num)),collapse = '')
   Classifier <- readMat(paste(c(directory,Training_folderid,Training_fileid,"_classifier_parameters.mat"),collapse = ''),fixNames = FALSE)
   
   
@@ -130,9 +142,21 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
   EMG_biceps_thr <- EMG_Thresholds$Biceps_Threshold #5*rep(1,times = length(closedloop_Block_num))
   EMG_triceps_thr <- EMG_Thresholds$Triceps_Threshold #5*rep(1,times = length(closedloop_Block_num)) #c(5.5, 7.5, 7, 7, 6, 6, 6, 6)
   
+  # Added 9-7-2016 to select emg channels for classification 
+  if (grepl("left",Subject_impaired_side,ignore.case = TRUE)){
+    emg_control_channels <- c(1,2)
+  }else if (grepl("right",Subject_impaired_side,ignore.case = TRUE)){
+    emg_control_channels <- c(3,4)
+  }else {
+    warning("EMG channels are not specified correctly",immediate. = TRUE)
+    emg_control_channels <- c(0,0)
+    break
+  }
+  
 
   for (bc in seq_along(closedloop_Block_num)){
   
+        print(c("Working in Session ", toString(closeloop_Sess_num), ", Block ", toString(closedloop_Block_num[bc])))
         # Load kinematics file
         #cl_kinematics_data <- read.table("JF_ses4_block5_closeloop_kinematics.txt",header = TRUE, skip = 14)
         
@@ -178,16 +202,16 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
           else{
             EMG_data_interval <- cl_BMI_data$marker_block[which(cl_BMI_data$marker_block[,2]==50),1]
           }        
-          Biceps_EMG_rms_resampled <- resample(cl_BMI_data$processed_emg[1,],500,3.333)
+          Biceps_EMG_rms_resampled <- resample(cl_BMI_data$processed_emg[emg_control_channels[1],],500,3.333) # Added emg_control_channels on 9-7-2016
           Biceps_EMG_rms_resampled <- Biceps_EMG_rms_resampled[EMG_data_interval[1]:EMG_data_interval[2]]
           #Biceps_EMG_rms_resample1000 <- resample(Biceps_EMG_rms_resampled,1000,500)
-          Triceps_EMG_rms_resampled <- resample(cl_BMI_data$processed_emg[2,],500,3.333)
+          Triceps_EMG_rms_resampled <- resample(cl_BMI_data$processed_emg[emg_control_channels[2],],500,3.333)
           Triceps_EMG_rms_resampled <- Triceps_EMG_rms_resampled[EMG_data_interval[1]:EMG_data_interval[2]]
           #Triceps_EMG_rms_resample1000 <- resample(Triceps_EMG_rms_resampled,1000,500)
           biceps_thr <- EMG_biceps_thr[bc]
           triceps_thr <- EMG_triceps_thr[bc]          
         }
-        print(c("Working with block", toString(closedloop_Block_num[bc])))
+        
         
         # Change column-names for kinematics data
         # Trig1 - stimulus
@@ -199,7 +223,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
         colnames(cl_kinematics_data)[c(2,7,12)] <- c("Elbow_position","Elbow_velocity","Elbow_torque")
         
         # Get first sample when a trigger signal was generated
-        cl_kinematics_data$Target_shown <- ExtractUniqueTriggers(cl_kinematics_data$Target_shown)
+      cl_kinematics_data$Target_shown <- ExtractUniqueTriggers(cl_kinematics_data$Target_shown)
         cl_kinematics_data$Target_reached <- ExtractUniqueTriggers(cl_kinematics_data$Target_reached)
   
   
@@ -270,7 +294,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
         #plot.ts(cl_kinematics_data[,c("Catch","Target_shown","Target_reached","Move_onset","Timeout")],plot.type = "single",col = mycolors, xy.labels = "")
         data_to_plot <- data.frame(filt_vel,cl_kinematics_data[,c("Target_shown","Target_reached","Move_onset","Timeout","Catch")])
                                    #Biceps_EMG_rms_resample1000[1:length(filt_vel)]/100, Triceps_EMG_rms_resample1000[1:length(filt_vel)]/100)
-        plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,0.5))
+        #plot.ts(data_to_plot,plot.type = "single",col = mycolors, xy.labels = "",ylim = c(0,0.5))
               
         # Remove Catch trials from Valid trials count i.e. correct for Catch Trials
         if (Subject_name == "JF"){
@@ -439,7 +463,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
                 
                 # Segment the Overall Spatial Avg and use it to derive features
                 spatial_avg_sample_correction <- round(((cl_BMI_data$marker_block[which(cl_BMI_data$marker_block[,2]==50)[1],1] - cl_BMI_data$marker_block[1,1])/500)*20)
-                spatial_avg_index <- feature_index + spatial_avg_sample_correction
+                spatial_avg_index <- feature_index + spatial_avg_sample_correction # advancing the time, so spatial_avg_index and Overall_spatial_Chan_avg are aligned
                 spatial_avg_epoch <- cl_BMI_data$Overall_spatial_chan_avg[(spatial_avg_index - Classifier$smart_window_length*resamp_Fs):spatial_avg_index]
                 epoch_time <- seq(from = -1*Classifier$smart_window_length,to = 0,by = 1/resamp_Fs)
                 
@@ -530,6 +554,14 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
               }
               
           }
+        }else{ # Added on 9-1-2016 for the case when Closed-loop MATLAB results file is missing (very rare occurence)
+          for (k in seq_along(adj_start_of_trial)){
+            cl_trial_stats$EEG_decisions[k] <- -9999
+            cl_trial_stats$EEG_EMG_decisions[k] <- -9999
+            cl_trial_stats$EMG_decisions[k] <- -9999
+            cl_trial_stats$EEG_Kinematic_latency_ms[k] <- -9999
+          }
+          
         }
         
   # Correct for Catch Trials after finding nearest stimulus and response indices above
@@ -619,7 +651,7 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
       ", TPR = ", 100*sum(Successful_trials)/sum(Total_num_of_trials),
       "%, FPR = ", 100*sum(Failed_Catch_trials)/sum(Catch_trials), 
       "%, Accuracy = ", 100*((sum(Successful_trials)+sum(Catch_trials)-sum(Failed_Catch_trials))/(sum(Total_num_of_trials) + sum(Catch_trials))),
-      "\n")
+      "%\n")
   
   if (use_simulated_closeloop_results == 1){
     save_filename <- paste(c(directory,sim_results_folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"B_",simulation_mode,"_cloop_statistics.csv"),collapse = '')
@@ -643,8 +675,8 @@ analyze_closedloop_session_data <- function(directory,Subject_name,closeloop_Ses
   # Used for generating raster plot - Raster plot for paper
   #save_matfile1 <- paste(c(directory,folderid,Subject_name,"_ses",toString(closeloop_Sess_num),"_block",toString(closedloop_Block_num),"_cloop_kinematic_params.mat"),collapse = '')
   #writeMat(save_matfile1,cl_kinematic_params = cl_kinematic_params, append = FALSE)
-   cl_session_stats # Commented on 5-2-2016 for running stand alone function
-} #Nikunj - 5/2/2016
+  #cl_session_stats # Commented on 9-6-2016 for non-function use
+#} # Commented on 9-6-2016 for non-function use
 
 
 

@@ -1,10 +1,10 @@
 % Subject Details
-Subject_name = 'S9011';
+Subject_name = 'S9014';
 Sess_num = '2';
 Cond_num = 1;  % 1 - Active; 2 - Passive; 3 - Triggered; 4 - Observation 
-Block_num = 170;
+Block_num = 160;
 
-folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_name '\' Subject_name '_Session' num2str(Sess_num) '\']; % change2
+folder_path = ['D:\NRI_Project_Data\Clinical_study_Data\Subject_' Subject_name '\' Subject_name '_Session' num2str(Sess_num) '\']; % change2
 load([folder_path Subject_name '_ses' num2str(Sess_num) '_cond' num2str(Cond_num) '_block' num2str(Block_num) '_performance_optimized_conventional_smart.mat']);      % Always use causal for training classifier
                  
 channels  = Performance.optimized_channels;
