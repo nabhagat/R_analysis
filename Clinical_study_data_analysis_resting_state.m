@@ -11,13 +11,13 @@
 clear;
 paper_font_size = 12;
 x_axis_deviation = [0.15,0.05,-0.05,-0.15];
-directory = 'D:\NRI_Project_Data\Clinical_study_Data\';
-Subject_names = {'S9020','S9018','S9017','S9014','S9012','S9011','S9010','S9009','S9007'};
-Subject_numbers = [9020,9018,9017,9014,9012,9011,9010,9009,9007];
-Subject_labels = {'S9','S8','S7','S6','S5','S4','S3','S2','S1'};
-Subject_velocity_threshold = [1.5,1.5,1.1,1.17,1.28,1.16,1.03,1.99,1.19];
-ACC_marker_color = {'-^m','--ok','-sb','--ob','-sk','-vr','-^m','--ok','-sb'};
-Latency_marker_color = {'^m','ok','sb','ob','sk','vr','^m','ok','sb'};
+directory = '\\bmi-nas-01\contreras-UH\NRI_Project_Nikunj\Experiment_Data\All_Subjects\';
+Subject_names = {'ERWS'}; %,'S9014','S9012','S9011','S9010','S9009','S9007'};
+Subject_numbers = [9014,9012,9011,9010,9009,9007];
+Subject_labels = {'S6','S5','S4','S3','S2','S1'};
+Subject_velocity_threshold = [1.17,1.28,1.16,1.03,1.99,1.19];
+ACC_marker_color = {'--ob','-sk','-vr','-^m','--ok','-sb'};
+Latency_marker_color = {'ob','sk','vr','^m','ok','sb'};
 TPR_marker_color = {'--ok','--sk','--ok','--*k','--^k'};
 FPR_marker_color = {'--ok','-sk','-ok','*k','^k'};
 Marker_face_color = {'w','k','r','m','w','b'};
@@ -29,14 +29,40 @@ h_fpr = zeros(length(Subject_names),1);
 h_intent = zeros(length(Subject_names),1);
 h_likert = zeros(length(Subject_names),1);
 
- EMG_channel_nos = [17 22 41 42 45 46 51 55];
+EMG_channel_nos = [17 22 41 42 45 46 51 55];
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab; % start EEGLAB from Matlab 
  
 segment_resting_eegdata = 0; 
 plot_c3i_poster_plot = 0; 
-plot_sfn_poster_plot = 1;
+plot_sfn_poster_plot = 0;
 plot_movement_smoothness = 0;
 compute_statistics = 0;
+
+%%
+EMG_channel_nos = [17 22 41 42 45 46 51 55];%[17 22 41 46];
+[ALLEEG EEG CURRENTSET ALLCOM] = eeglab; % start EEGLAB from Matlab 
+
+Subject_name = 'S9013';
+Ses_num = 3; 
+Cond_num = [1];
+Blocknos = [0:8]; 
+import_raw_data = 1;
+directory = '\\bmi-nas-01\contreras-UH\NRI_Project_Nikunj\Experiment_Data\Clinical_study_Data\Subjects_withdrew\';
+eegfilesave_location = ['C:\Users\nabhagat\Documents\Nikunj_Data\Resting_EEG_data_Stroke\Subject_' Subject_name '\'];
+eegfile_location = [directory 'Subject_' Subject_name '\' Subject_name '_Session' num2str(Ses_num) '\'];
+%eegfile_location = [directory Subject_name '_Session' num2str(Ses_num) '\'];
+
+for cn = 1:length(Cond_num)
+    for block_num = 1:length(Blocknos)
+%           eegfile_name = [Subject_name '_ses' num2str(Ses_num) '_cond' num2str(Cond_num(cn)) '_block' num2str(Blocknos(block_num))]; 
+          %eegfile_name = [Subject_name '_ses' num2str(Ses_num) '_closeloop_block' num2str(Blocknos(block_num))]; 
+          eegfile_name = [Subject_name '_ses' num2str(Ses_num) '_closeloop_block000' num2str(Blocknos(block_num))]; 
+          [ALLEEG, EEG, CURRENTSET, ALLCOM] = SegmentEEGRestData(Subject_name,Ses_num, Blocknos(block_num) + 4*(cn-1), import_raw_data, EMG_channel_nos, ...
+                                              eegfile_location, eegfile_name, eegfilesave_location, ALLEEG, EEG, CURRENTSET, ALLCOM); 
+          [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG); % copy it to ALLEEG
+          eeglab redraw;
+    end
+end
 
 if segment_resting_eegdata == 1
    for subj_n = 1:length(Subject_names)               
@@ -56,16 +82,16 @@ if segment_resting_eegdata == 1
         unique_session_nos = unique(subject_study_data(:,1));
         unique_session_nos = [1; 2; unique_session_nos]; 
         
-        for ses_num = 11:length(unique_session_nos)
-            eegfilesave_location = ['D:\NRI_Project_Data\Clinical_study_Data\Resting_EEG_data_Stroke\Subject_' Subject_names{subj_n} '\'];
-            eegfile_location = ['D:\NRI_Project_Data\Clinical_study_Data\Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(unique_session_nos(ses_num)) '\'];
+        for ses_num = 1:length(unique_session_nos)
+            eegfilesave_location = ['C:\Users\nabhagat\Documents\Nikunj_Data\Resting_EEG_data_Stroke\Subject_' Subject_names{subj_n} '\'];
+            eegfile_location = [directory 'Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session' num2str(unique_session_nos(ses_num)) '\'];
             
-            if (unique_session_nos(ses_num) == 1) || (unique_session_nos(ses_num) == 2)
+% %             if (unique_session_nos(ses_num) == 1) || (unique_session_nos(ses_num) == 2)
                 
                 if (unique_session_nos(ses_num) == 1) 
                     unique_block_nos = [1 2 3 4]';  % change 
                 elseif (unique_session_nos(ses_num) == 2)
-                    unique_block_nos = [3 4 5 6]';  % change                    
+                    unique_block_nos = [2 3 4 5]';  % change                    
                 end
                     
                 Cond_num = 1;   % change
@@ -76,22 +102,22 @@ if segment_resting_eegdata == 1
                       [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG); % copy it to ALLEEG
                       eeglab redraw;
                 end
-            else
-                unique_block_nos = unique(subject_study_data(subject_study_data(:,1) == unique_session_nos(ses_num),2));
-                for block_num = 1:length(unique_block_nos)
-                        if unique_block_nos(block_num) > 9
-                            eegfile_name = [Subject_names{subj_n} '_ses' num2str(unique_session_nos(ses_num))  '_closeloop_block00' num2str(unique_block_nos(block_num))]; 
-                       else
-                            eegfile_name = [Subject_names{subj_n} '_ses' num2str(unique_session_nos(ses_num))  '_closeloop_block000' num2str(unique_block_nos(block_num))]; 
-                       end
-                      
-                      [ALLEEG, EEG, CURRENTSET, ALLCOM] = SegmentEEGRestData(Subject_names{subj_n},unique_session_nos(ses_num), unique_block_nos(block_num), 1, EMG_channel_nos, ...
-                                                                                              eegfile_location, eegfile_name, eegfilesave_location, ALLEEG, EEG, CURRENTSET, ALLCOM); 
-                      [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG); % copy it to ALLEEG
-                      eeglab redraw;
-                end
+% %             else
+% %                 unique_block_nos = unique(subject_study_data(subject_study_data(:,1) == unique_session_nos(ses_num),2));
+% %                 for block_num = 1:length(unique_block_nos)
+% %                         if unique_block_nos(block_num) > 9
+% %                             eegfile_name = [Subject_names{subj_n} '_ses' num2str(unique_session_nos(ses_num))  '_closeloop_block00' num2str(unique_block_nos(block_num))]; 
+% %                        else
+% %                             eegfile_name = [Subject_names{subj_n} '_ses' num2str(unique_session_nos(ses_num))  '_closeloop_block000' num2str(unique_block_nos(block_num))]; 
+% %                        end
+% %                       
+% %                       [ALLEEG, EEG, CURRENTSET, ALLCOM] = SegmentEEGRestData(Subject_names{subj_n},unique_session_nos(ses_num), unique_block_nos(block_num), 1, EMG_channel_nos, ...
+% %                                                                                               eegfile_location, eegfile_name, eegfilesave_location, ALLEEG, EEG, CURRENTSET, ALLCOM); 
+% %                       [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG); % copy it to ALLEEG
+% %                       eeglab redraw;
+% %                 end
                 
-            end
+% %             end
         end
    end
 end
@@ -199,7 +225,8 @@ if plot_sfn_poster_plot == 1
         all_subjects_bmi_performance(:,:,subj_n) =bmi_performance;
     end
     
-        % all_subjects_bmi_performance has size (#of sessions, #variables, #subjects)
+        % all_subjects_bmi_performance has size (#of sessions, #variables,
+        % #subjects)
         all_subjects_session_wise_accuracy_mean = mean(squeeze(all_subjects_bmi_performance(:,14,:)),2);
         all_subjects_session_wise_accuracy_std = std(squeeze(all_subjects_bmi_performance(:,14,:)),[],2);
         all_subjects_session_wise_FPR_mean = mean(squeeze(all_subjects_bmi_performance(:,4,:)),2);
@@ -216,9 +243,7 @@ if plot_sfn_poster_plot == 1
         all_subjects_sessions_wise_latency_std = [];
         for ses_num = 1:size(All_session_latencies_mean,1)
             means = All_session_latencies_mean(ses_num,:);
-            %means = All_session_latencies_mean(:);
             trials = All_session_latencies_num_trials(ses_num,:);
-            %trials = All_session_latencies_num_trials(:);
             N = length(trials);
             weighted_means = sum(means.*trials)/sum(trials);
             weighted_standard_deviation = sqrt(sum(((means - weighted_means).^2).*trials)/(((N-1)/N)*sum(trials)));
@@ -234,9 +259,7 @@ if plot_sfn_poster_plot == 1
         all_subjects_sessions_wise_likert_std = [];
          for ses_num = 1:size(All_session_likert_mean,1)
             means = All_session_likert_mean(ses_num,:);
-            %means = All_session_likert_mean(:);
             trials = All_session_likert_num_trials(ses_num,:);
-            %trials = All_session_likert_num_trials(:);
             N = length(trials);
             weighted_means = sum(means.*trials)/sum(trials);
             weighted_standard_deviation = sqrt(sum(((means - weighted_means).^2).*trials)/(((N-1)/N)*sum(trials)));

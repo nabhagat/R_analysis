@@ -78,14 +78,15 @@ find_next_response_index <- function(response_trigs,catch_trigs){
 
   # Changes to be made if running this function independently
   directory <- "D:/NRI_Project_Data/Clinical_study_Data/"
-  Subject_name <- "S9011"             #1
+  Subject_name <- "S9017"             #1
+  columns_have_shifted <- 1           # Added on 10-23-2017. Set 1 for subjects 9017 (session 7 onwards), 9018, 9020
   closeloop_Sess_num <- 14             #2
-  closedloop_Block_num <- c(4:11)      #3
+  closedloop_Block_num <- c(1:6)      #3
   Calib_cond_no  <- 1 #Comment                              #5 1 - Backdrive, 3-Triggered modes
   BMIClassifier_Training_Sess_num <- 2 #Comment
-  BMIClassifier_Training_Block_num <- 170 #Comment
-  Subj_vel_threshold <- 1.16 # comment
-  Subject_impaired_side <- "left" # comment for non-function use
+  BMIClassifier_Training_Block_num <- 160 #Comment
+  Subj_vel_threshold <- 1.1 # comment
+  Subject_impaired_side <- "right" # comment for non-function use
 
   velocity_threshold <- (Subj_vel_threshold)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
   
@@ -217,13 +218,23 @@ find_next_response_index <- function(response_trigs,catch_trigs){
         # Trig1 - stimulus
         # Trig2 - response
         # Trig_Mov - Movement onset
-        colnames(cl_kinematics_data)[c(1,17,18,19)] <- c("time","Target_shown","Target_reached","Move_onset")
-        colnames(cl_kinematics_data)[c(22,21)] <- c("Catch","Timeout") # Timeout is 21 and catch is 22 on 9/13/2015. Previously these were swapped
-        #colnames(cl_kinematics_data)[c(22,21)] <- c("Timeout","Catch") # Swapped back - Nikunj 07/01/16
-        colnames(cl_kinematics_data)[c(2,7,12)] <- c("Elbow_position","Elbow_velocity","Elbow_torque")
+        
+        if(columns_have_shifted == 1){ #Added on 10-23-2017
+          colnames(cl_kinematics_data)[c(16,17,18)] <- c("Target_shown","Target_reached","Move_onset")
+          colnames(cl_kinematics_data)[c(19,21,20,22)] <- c("Target","Catch","Timeout","Count") # Timeout is 21 and catch is 22 on 9/13/2015. Previously these were swapped
+          colnames(cl_kinematics_data)[c(23,24,25,26)] <- c("Fixation","Velocity_thr","EEG_GO","NA");
+          #colnames(cl_kinematics_data)[c(22,21)] <- c("Timeout","Catch") # Swapped back - Nikunj 07/01/16
+          colnames(cl_kinematics_data)[c(1,6,11)] <- c("Elbow_position","Elbow_velocity","Elbow_torque")
+        }else{
+          colnames(cl_kinematics_data)[c(1,17,18,19)] <- c("time","Target_shown","Target_reached","Move_onset")
+          colnames(cl_kinematics_data)[c(22,21)] <- c("Catch","Timeout") # Timeout is 21 and catch is 22 on 9/13/2015. Previously these were swapped
+          #colnames(cl_kinematics_data)[c(22,21)] <- c("Timeout","Catch") # Swapped back - Nikunj 07/01/16
+          colnames(cl_kinematics_data)[c(2,7,12)] <- c("Elbow_position","Elbow_velocity","Elbow_torque")
+        }
+        
         
         # Get first sample when a trigger signal was generated
-      cl_kinematics_data$Target_shown <- ExtractUniqueTriggers(cl_kinematics_data$Target_shown)
+        cl_kinematics_data$Target_shown <- ExtractUniqueTriggers(cl_kinematics_data$Target_shown)
         cl_kinematics_data$Target_reached <- ExtractUniqueTriggers(cl_kinematics_data$Target_reached)
   
   
@@ -625,15 +636,19 @@ find_next_response_index <- function(response_trigs,catch_trigs){
         Failed_Catch_trials <- c(Failed_Catch_trials,length(intersect(which(cl_session_stats[block_ind,"Valid_or_catch"] == 2), 
                                                      which(cl_session_stats[block_ind,"Intent_detected"] == 1))))
   
-        cl_kinematic_params <- data.frame(
-          #Block_number = rep_len(closedloop_Block_num[bc],length(all_stimulus_indices)),
-          #Start_of_trial = round(all_stimulus_indices/2),
-          #End_of_trial = round((cl_kinematics_data$Target_reached + cl_kinematics_data$Timeout)/2),
-          #Valid_or_catch = cl_trial_stats$Valid_or_catch,
-          Elbow_pos = resample(cl_kinematics_data$Elbow_position,500,1000),
-          Elbow_vel = resample(cl_kinematics_data$Elbow_velocity,500,1000),
-          time = resample(cl_kinematics_data$time,500,1000)
-        ) # Used for creating Raster Plot !!
+        if (columns_have_shifted == 0){
+          # Added if condition on 10-23-2017, because $time information is missing S9017 onwards
+          cl_kinematic_params <- data.frame(
+            #Block_number = rep_len(closedloop_Block_num[bc],length(all_stimulus_indices)),
+            #Start_of_trial = round(all_stimulus_indices/2),
+            #End_of_trial = round((cl_kinematics_data$Target_reached + cl_kinematics_data$Timeout)/2),
+            #Valid_or_catch = cl_trial_stats$Valid_or_catch,
+            Elbow_pos = resample(cl_kinematics_data$Elbow_position,500,1000),
+            Elbow_vel = resample(cl_kinematics_data$Elbow_velocity,500,1000),
+            time = resample(cl_kinematics_data$time,500,1000)
+          ) # Used for creating Raster Plot !!
+        }
+        
     
   
   }

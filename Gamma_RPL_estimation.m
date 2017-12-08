@@ -10,14 +10,13 @@
 clear all; 
 [ALLEEG EEG CURRENTSET ALLCOM] = eeglab; % start EEGLAB from Matlab 
 
-
 EEG_channel_nos = 1:64;
 EMG_channel_nos = [17 22 41 42 45 46 51 55];
 Scalp_plot_channels = EEG_channel_nos;
 Scalp_plot_channels(EMG_channel_nos) = [ ];
-Subject_name_all = {'S9014','S9012','S9011','S9010','S9009','S9007'};
-Subject_number = [9014,9012,9011,9010,9009,9007];
-Subject_labels = {'S6','S5','S4','S3','S2','S1'};
+Subject_name_all = {'S9020', 'S9014','S9012','S9011','S9010','S9009','S9007'}; % 'S9018', 'S9017',
+Subject_number = [9020, 9014, 9012, 9011, 9010, 9009, 9007]; % 9018, 9017, 
+Subject_labels = {'S7', 'S6','S5','S4','S3','S2','S1'}; %'S8', 'S7', 
 ACC_marker_color = {'-sk','-sk','-vr','-^m','--ok','-sb'};
 Marker_face_color = {'k','k','r','m','w','b'};
 Sig_line_color = {'--k','--k','--k','--k','--k','--k'};
@@ -32,7 +31,7 @@ poster_font_size = 12;
     beta_range = [13 30];
     gamma_range1 = [30 70];
     %gamma_range2 = [65 85];
-    tot_range1 = [0.1 100];
+    tot_range1 = [0.1 250]; %[0.1 100]
         %tot_range2 = [0.1 85];
 
 % Subject Details 
@@ -42,47 +41,101 @@ poster_font_size = 12;
 % Cond_num = 1;  % 1 - Active/User-driven; 2 - Passive; 3 - Triggered/User-triggered; 4 - Observation 
 % Block_num = 160;
 
+% Flags to control the processing 
+use_calibration_data = 1;
+readbv_files = 0;
+segment_eeg_baseline = 0;
+use_saved_data = 0;
+figure('Position',[-1500 200 1204 3*116]); 
+Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
+
 %Gamma_RPL_channels = [1 2 33 34 28 35 36 37 4 38 5 39 6 40]; % Common
-Gamma_RPL_channels = [1 2 33 34 28 35 36 37 4 38 5 39 6 40 43 9 32 10 44];
+%Gamma_RPL_channels = [1 2 33 34 28 35 36 37 4 38 5 39 6 40 43 9 32 10 44];
+Gamma_RPL_channels = [1 2 31 32 26 33 34 35 4 36 5 37 6 38]; % EEG_channel_nos = 1:56;
+Gamma_RPL_channels = [1 2 33 34 28 35 36 37 4 38 5 39 6 40];
 %Gamma_RPL_channels = [4 38 5 39 6 43 9 32 10 44 13 48 14 49 15];
 %Gamma_RPL_channels = [1 2 33 34 28 35 4 38 5 39 6 9 32 10 44]; %S9010
 %Gamma_RPL_channels = [1 2 33 36 38 5 39 40 9 32 10 44]; %S9007
 subject_wise_correlation_values = zeros(1,length(Subject_name_all));
 subject_wise_correlation_p_values = zeros(1,length(Subject_name_all));
+if use_calibration_data == 1
+    subject_wise_gamma_RPL = zeros(length(Subject_name_all), 1);
+    subject_wise_bmi_accuracy = [81.82,  72.73, 77.27, 73.08, 92.31, 83.33, 96.15]./100;
+else
+    subject_wise_gamma_RPL = zeros(length(Subject_name_all), 12);
+    subject_wise_bmi_accuracy = zeros(length(Subject_name_all), 12);
+end
 subject_wise_average_gamma_RPL = zeros(1,length(Subject_name_all));
+subject_wise_average_bmi_accuracy = zeros(1,length(Subject_name_all));
 %Gamma_RPL_channels = [34 28 35 4 38 5 39 6];
-
-% Flags to control the processing 
-readbv_files = 0;
-segment_eeg_baseline = 0;
-use_saved_data = 1;
-figure('Position',[-1500 200 1204 3*116]); 
-Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
-
 
  for subj_n = 1:length(Subject_name_all)
      Subject_name = Subject_name_all{subj_n}; % change1
     switch Subject_name
         case 'S9007'
-            blocks_nos_to_import = [2 1 1 1 1 1 1 1 1 1 1 1]; % S9007_start_blocks
-            all_sessions_nos = 3:14;
+            if use_calibration_data == 1
+                blocks_nos_to_import = [1]; % S9007_start_blocks
+                all_sessions_nos = 1;
+            else
+                blocks_nos_to_import = [2 1 1 1 1 1 1 1 1 1 1 1]; % S9007_start_blocks
+                all_sessions_nos = 3:14;
+            end
         case 'S9009'
-            blocks_nos_to_import = [1 1 1 1 1 1 2 1 1 1 1 1]; % S9009_start_blocks
-            %blocks_nos_to_import = [3 3 3 4 4 4 4 4 4 4 4 4]; % S9009_mid_blocks
-            all_sessions_nos = 4:15;
+            if use_calibration_data == 1
+                blocks_nos_to_import = [2]; % S9009_start_blocks
+                all_sessions_nos = 1;
+            else
+                blocks_nos_to_import = [1 1 1 1 1 1 2 1 1 1 1 1]; % S9009_start_blocks
+                %blocks_nos_to_import = [3 3 3 4 4 4 4 4 4 4 4 4]; % S9009_mid_blocks
+                all_sessions_nos = 4:15;
+            end
         case 'S9010'
-            blocks_nos_to_import = [2 1 1 2 1 1 1 1 1 1 1 1]; % S9010_start_blocks
-            %blocks_nos_to_import = [9 8 8 9 8 8 8 8 8 8 8 8]; % S9010_end_blocks
-            all_sessions_nos = 3:14;
+            if use_calibration_data == 1
+                blocks_nos_to_import = [1]; 
+                all_sessions_nos = 1;
+            else
+                blocks_nos_to_import = [2 1 1 2 1 1 1 1 1 1 1 1]; % S9010_start_blocks
+                %blocks_nos_to_import = [9 8 8 9 8 8 8 8 8 8 8 8]; % S9010_end_blocks
+                all_sessions_nos = 3:14;
+            end
         case 'S9011'
-            blocks_nos_to_import = [6 1 1 4 4 3 4 4 4 4 6 4]; % S9011_start_blocks
-            all_sessions_nos = 3:14;
+            if use_calibration_data == 1
+                blocks_nos_to_import = [1]; 
+                all_sessions_nos = 1;
+            else
+                blocks_nos_to_import = [6 1 1 4 4 3 4 4 4 4 6 4]; % S9011_start_blocks
+                all_sessions_nos = 3:14;
+            end
         case 'S9012'
-            blocks_nos_to_import = [1 1 1 1 2 1 1 1 1 1 1 1]; % S9012_start_blocks
-            all_sessions_nos = 3:14;
+            if use_calibration_data == 1
+                blocks_nos_to_import = [1]; 
+                all_sessions_nos = 1;
+            else
+                blocks_nos_to_import = [1 1 1 1 2 1 1 1 1 1 1 1]; % S9012_start_blocks
+                all_sessions_nos = 3:14;
+            end
         case 'S9014'
-            blocks_nos_to_import = [3 1 1 4 1 1 1 1 1 2 1 1]; % S9014_start_blocks
+            if use_calibration_data == 1
+                blocks_nos_to_import = [1]; 
+                all_sessions_nos = 1;
+            else
+                blocks_nos_to_import = [3 1 1 4 1 1 1 1 1 2 1 1]; % S9014_start_blocks
+                all_sessions_nos = 3:14;
+            end
+         case 'S9017'
+            blocks_nos_to_import = [3 1 1 1 2 1 1 5 2 1 1 1]; % S9017_start_blocks
             all_sessions_nos = 3:14;
+         case 'S9018'
+            blocks_nos_to_import = [1 1 1 1 1 1 3 1 1 1 2 1]; % S9018_start_blocks
+            all_sessions_nos = 4:15;
+         case 'S9020'
+             if use_calibration_data == 1
+                blocks_nos_to_import = [1]; 
+                all_sessions_nos = 1;
+            else
+                blocks_nos_to_import = [2 2 1 2 1 3 1 1 1 3 1 1]; % S9020_start_blocks
+                all_sessions_nos = 3:14;
+             end
     end
 
     if use_saved_data == 1
@@ -90,6 +143,7 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
         load([closeloop_folder_path Subject_name '_bmi_performance.mat']);
         load([closeloop_folder_path Subject_name '_all_sessions_beta_RPL.mat']);
         load([closeloop_folder_path Subject_name '_all_sessions_gamma_RPL.mat']);
+        load([closeloop_folder_path Subject_name '_all_sessions_gamma_norm.mat']);
     else
     
         % all_sessions_delta_RPL = [];
@@ -102,14 +156,16 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
         % all_sessions_theta_norm = [];
         % all_sessions_alpha_norm = [];
         % all_sessions_beta_norm = [];
-        % all_sessions_gamma1_norm = [];
-
-
-    
-    
+        all_sessions_gamma_norm = [];
+%         all_sessions_gamma_power = [];
+   
         for ses_n = 1:length(all_sessions_nos)
             closeloop_Sess_num = all_sessions_nos(ses_n); 
-            closeloop_folder_path = ['D:\NRI_Project_Data\Clinical_study_Data\Subject_' Subject_name '\' Subject_name '_Session' num2str(closeloop_Sess_num) '\']; % change3
+            if use_calibration_data == 1
+                closeloop_folder_path = ['D:\NRI_Project_Data\Clinical_study_Data\Resting_EEG_data_Stroke\Subject_' Subject_name '\']; % change3A
+            else
+                closeloop_folder_path = ['D:\NRI_Project_Data\Clinical_study_Data\Subject_' Subject_name '\' Subject_name '_Session' num2str(closeloop_Sess_num) '\']; % change3
+            end
 
             %% Import raw BrainVision files (.eeg, .vhdr, .vmrk)  to EEGLAB dataset
             if readbv_files == 1
@@ -138,8 +194,8 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
             end
 
             %% Segment raw EEG to determine baseline (30s)
-            if segment_eeg_baseline == 1
-                EEG = pop_loadset( [Subject_name '_ses' num2str(closeloop_Sess_num)  '_closeloop_block' num2str(blocks_nos_to_import(ses_n)) '_eeg_raw.set'], closeloop_folder_path); 
+            if segment_eeg_baseline == 1                
+                EEG = pop_loadset( [Subject_name '_ses' num2str(closeloop_Sess_num)  '_closeloop_block' num2str(blocks_nos_to_import(ses_n)) '_eeg_raw.set'], closeloop_folder_path);                 
                 [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG); % copy it to ALLEEG
                 eeglab redraw;
 
@@ -167,7 +223,7 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
                     end
                 end
                 if isempty(block_start_trigger_latency)
-                    errordlg('Trial start triggere "S 42" not found');
+                    errordlg('Trial start trigger "S 42" not found');
                 end
 
                 % Plot pre-trial start EEG data and 'manually' select interval
@@ -189,7 +245,11 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
 
             %% Filter baseline EEG segment and compute RPL
 
-            EEG = pop_loadset( [Subject_name '_ses' num2str(closeloop_Sess_num)  '_closeloop_block' num2str(blocks_nos_to_import(ses_n)) '_eeg_baseline.set'], closeloop_folder_path); 
+            if use_calibration_data == 1                   
+                    EEG = pop_loadset( [Subject_name '_session' num2str(closeloop_Sess_num)  '_block' num2str(blocks_nos_to_import(ses_n)) '_resting_eeg.set'], closeloop_folder_path); 
+            else
+                EEG = pop_loadset( [Subject_name '_ses' num2str(closeloop_Sess_num)  '_closeloop_block' num2str(blocks_nos_to_import(ses_n)) '_eeg_baseline.set'], closeloop_folder_path); 
+            end
             [ALLEEG EEG CURRENTSET] = eeg_store(ALLEEG, EEG); % copy it to ALLEEG
             eeglab redraw;
 
@@ -282,10 +342,22 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
         %         all_sessions_theta_norm = [all_sessions_theta_norm theta_norm];
         %         all_sessions_alpha_norm = [all_sessions_alpha_norm alpha_norm];
         %         all_sessions_beta_norm = [all_sessions_beta_norm beta_norm];
-        %         all_sessions_gamma1_norm = [all_sessions_gamma1_norm gamma_norm];
+                all_sessions_gamma_norm = [all_sessions_gamma_norm gamma_norm];
+%                 all_sessions_gamma_power = [all_sessions_gamma_power gamma_power];
         end
-
+        
+        % Save Gamma norm
+        if use_calibration_data == 1                   
+            save([directory Subject_name_all{subj_n} '_calibration_gamma_norm.mat'],'all_sessions_gamma_norm')        
+        else
+            %save([directory 'Subject_' Subject_name '\' Subject_name_all{subj_n} '_all_sessions_gamma_norm.mat'],'all_sessions_gamma_norm')
+            save([directory Subject_name_all{subj_n} '_all_sessions_gamma_norm.mat'],'all_sessions_gamma_norm')
+    %         save([directory Subject_name_all{subj_n} '_all_sessions_gamma_power.mat'],'all_sessions_gamma_power')
+        end
+        
+        
 %% Analyze BMI accuracy from clinical study
+    if use_calibration_data ~= 1
         bmi_performance = [];
         bmi_performance_blockwise = [];
 
@@ -371,6 +443,7 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
                 % mean_Session_accuracy_blockwise    std_Session_accuracy_blockwise
             end
     end
+    end
     
 %% Compute correlations between BMI accuracy and EEG RPL
     %        1          2                 3                  4                 5                        6                                                    7 
@@ -382,31 +455,47 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
     %                   15                                                                    16
     % mean_Session_accuracy_blockwise    std_Session_accuracy_blockwise
 
-    bmi_accuracies =  bmi_performance(:,15)';
-    bmi_accuracies_variance = bmi_performance(:,16)';
-    %bmi_accuracies_CoV = bmi_accuracies_variance./bmi_accuracies;
-    % X = [12 x 56]; Y = [12 x 1]; corr(X,Y) = [56 x 1]
+    if use_calibration_data == 1
+        all_channels_all_sessions_Frontal_gamma_RPL = all_sessions_gamma_norm(Gamma_RPL_channels,:); % Changed on 12-6-17
+        Avg_all_sessions_frontal_gamma_RPL = mean(all_channels_all_sessions_Frontal_gamma_RPL);
+        
+        % Added 12-6-2017
+        subject_wise_gamma_RPL(subj_n,:) = Avg_all_sessions_frontal_gamma_RPL;
+%         subject_wise_bmi_accuracy(subj_n,:) = bmi_accuracies;        
+    else
+        bmi_accuracies =  bmi_performance(:,15)';
+        bmi_accuracies_variance = bmi_performance(:,16)';
+        %bmi_accuracies_CoV = bmi_accuracies_variance./bmi_accuracies;
+        % X = [12 x 56]; Y = [12 x 1]; corr(X,Y) = [56 x 1]
 
-    % [all_sessions_delta_RPL_corr,all_sessions_delta_RPL_corr_pvals] = corr(all_sessions_delta_RPL',bmi_accuracies_variance');
-    % [all_sessions_theta_RPL_corr,all_sessions_theta_RPL_corr_pvals] = corr(all_sessions_theta_RPL',bmi_accuracies_variance');
-    % [all_sessions_alpha_RPL_corr,all_sessions_alpha_RPL_corr_pvals] = corr(all_sessions_alpha_RPL',bmi_accuracies_variance');
-    [all_sessions_beta_RPL_corr,all_sessions_beta_RPL_corr_pvals] = corr(all_sessions_beta_RPL',bmi_accuracies');   % correlate with BMI accuracy variance
-    [all_sessions_gamma_RPL_corr,all_sessions_gamma_RPL_corr_pvals] = corr(all_sessions_gamma_RPL',bmi_accuracies'); % correlate with average BMI accuracy
+        % [all_sessions_delta_RPL_corr,all_sessions_delta_RPL_corr_pvals] = corr(all_sessions_delta_RPL',bmi_accuracies_variance');
+        % [all_sessions_theta_RPL_corr,all_sessions_theta_RPL_corr_pvals] = corr(all_sessions_theta_RPL',bmi_accuracies_variance');
+        % [all_sessions_alpha_RPL_corr,all_sessions_alpha_RPL_corr_pvals] = corr(all_sessions_alpha_RPL',bmi_accuracies_variance');
+        [all_sessions_beta_RPL_corr,all_sessions_beta_RPL_corr_pvals] = corr(all_sessions_beta_RPL',bmi_accuracies');   % correlate with BMI accuracy variance
+        [all_sessions_gamma_RPL_corr,all_sessions_gamma_RPL_corr_pvals] = corr(all_sessions_gamma_RPL',bmi_accuracies'); % correlate with average BMI accuracy
 
-    % [all_sessions_delta_CoV_corr,all_sessions_delta_norm_corr_pvals] = corr(all_sessions_delta_RPL',bmi_accuracies_CoV');
-    % [all_sessions_theta_CoV_corr,all_sessions_theta_norm_corr_pvals] = corr(all_sessions_theta_RPL',bmi_accuracies_CoV');
-    % [all_sessions_alpha_CoV_corr,all_sessions_alpha_norm_corr_pvals] = corr(all_sessions_alpha_RPL',bmi_accuracies_CoV');
-    % [all_sessions_beta_CoV_corr,all_sessions_beta_norm_corr_pvals] = corr(all_sessions_beta_RPL',bmi_accuracies_CoV');
-    % [all_sessions_gamma1_CoV_corr,all_sessions_gamma1_norm_corr_pvals] = corr(all_sessions_gamma1_RPL',bmi_accuracies_CoV');
+        % [all_sessions_delta_CoV_corr,all_sessions_delta_norm_corr_pvals] = corr(all_sessions_delta_RPL',bmi_accuracies_CoV');
+        % [all_sessions_theta_CoV_corr,all_sessions_theta_norm_corr_pvals] = corr(all_sessions_theta_RPL',bmi_accuracies_CoV');
+        % [all_sessions_alpha_CoV_corr,all_sessions_alpha_norm_corr_pvals] = corr(all_sessions_alpha_RPL',bmi_accuracies_CoV');
+        % [all_sessions_beta_CoV_corr,all_sessions_beta_norm_corr_pvals] = corr(all_sessions_beta_RPL',bmi_accuracies_CoV');
+        % [all_sessions_gamma1_CoV_corr,all_sessions_gamma1_norm_corr_pvals] = corr(all_sessions_gamma1_RPL',bmi_accuracies_CoV');
 
-    % Compute average RPL for frontal channels and compute correlation with BMI
-    % accuracy
-    all_channels_all_sessions_Frontal_gamma_RPL = all_sessions_gamma_RPL(Gamma_RPL_channels,:);
-    Avg_all_sessions_frontal_gamma_RPL = mean(all_channels_all_sessions_Frontal_gamma_RPL);
-    [corr_with_gamma_RPL,corr_with_gamma_RPL_p] = corr(Avg_all_sessions_frontal_gamma_RPL', bmi_accuracies');
-    subject_wise_correlation_values(subj_n) = corr_with_gamma_RPL;
-    subject_wise_correlation_p_values(subj_n) = corr_with_gamma_RPL_p;
-    subject_wise_average_gamma_RPL(subj_n) = mean(Avg_all_sessions_frontal_gamma_RPL);
+        % Compute average RPL for frontal channels and compute correlation with BMI
+        % accuracy
+    %    all_channels_all_sessions_Frontal_gamma_RPL = all_sessions_gamma_RPL(Gamma_RPL_channels,:);
+        all_channels_all_sessions_Frontal_gamma_RPL = all_sessions_gamma_norm(Gamma_RPL_channels,:); % Changed on 12-6-17
+        Avg_all_sessions_frontal_gamma_RPL = mean(all_channels_all_sessions_Frontal_gamma_RPL);
+        [corr_with_gamma_RPL,corr_with_gamma_RPL_p] = corr(Avg_all_sessions_frontal_gamma_RPL', bmi_accuracies');
+        subject_wise_correlation_values(subj_n) = corr_with_gamma_RPL;
+        subject_wise_correlation_p_values(subj_n) = corr_with_gamma_RPL_p;
+        subject_wise_average_gamma_RPL(subj_n) = mean(Avg_all_sessions_frontal_gamma_RPL);
+        subject_wise_average_bmi_accuracy(subj_n) = mean(bmi_accuracies);
+
+        % Added 12-6-2017
+        subject_wise_gamma_RPL(subj_n,:) = Avg_all_sessions_frontal_gamma_RPL;
+        subject_wise_bmi_accuracy(subj_n,:) = bmi_accuracies;
+    end
+    
 %% Plot normalized BMI accuracy across session
 
   
@@ -414,7 +503,7 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
 %     Cplot = tight_subplot(1,1,[0.05 0.02],[0.25 0.1],[0.1 0.05]);
 %     axes(Cplot(1)); hold on;
     
-    if subj_n == 1
+    if subj_n == 100
         axes(Cplot(subj_n)); hold on;
         h_acc = plot(1:size(bmi_performance,1), bmi_accuracies./max(bmi_accuracies), ACC_marker_color{subj_n},'MarkerFaceColor',Marker_face_color{subj_n},'LineWidth',1,'MarkerSize',10);
         h_rpl = plot(1:size(bmi_performance,1), Avg_all_sessions_frontal_gamma_RPL./max(Avg_all_sessions_frontal_gamma_RPL), '--ob','LineWidth',1,'MarkerFaceColor','b','MarkerSize',10);
@@ -523,22 +612,61 @@ Cplot = tight_subplot(1,1,[0.02 0.02],[0.15 0.05],[0.05 0.05]);
 
  end                          
 
-display(subject_wise_correlation_values)
-display(subject_wise_correlation_p_values)
-subject_wise_average_bmi_accuracy = [91 85 80 92 65 77];
-
+% display(subject_wise_correlation_values)
+% display(subject_wise_correlation_p_values)
+% display(subject_wise_average_gamma_RPL)
+% display(subject_wise_average_bmi_accuracy)
+% % subject_wise_average_bmi_accuracy = [91 85 80 92 65 77];
+% figure; plot(subject_wise_average_gamma_RPL, subject_wise_average_bmi_accuracy, 'or')
+% ylim([0 1])
 %% Plot correlation with Gamma RPL for all subjects
-figure('Position',[-1500 200 4.5*116 2*116]); 
-%plot(1:6,flip(subject_wise_correlation_values),'ok','MarkerFaceColor','k')
-bar(flip(subject_wise_correlation_values),'FaceColor',[0 0 1],'EdgeColor',[0 0 0],'LineWidth',1,'barwidth',0.5)
-ylim([-0.6 0.6]); 
-xlim([0.5 6.5]);
-set(gca,'Ytick',[-0.5 0 0.5],'YtickLabel',{'-0.5' '0' '0.5'},'FontSize',poster_font_size);
-set(gca,'Xtick',1:6,'Xticklabel',{'S1' 'S2' 'S3' 'S4' 'S5' 'S6'},'FontSize',poster_font_size);
-set(gca,'Xgrid','on');
-set(gca,'Ygrid','on');
-xlabel('All subjects','FontSize',poster_font_size);
-title({'Correlation (\rho) of BMI accuracy with frontal gamma RPL'},'FontSize',poster_font_size); 
+if use_calibration_data ~= 1
+    figure('Position',[-1500 200 4.5*116 2*116]); 
+    %plot(1:6,flip(subject_wise_correlation_values),'ok','MarkerFaceColor','k')
+    bar(flip(subject_wise_correlation_values),'FaceColor',[0 0 1],'EdgeColor',[0 0 0],'LineWidth',1,'barwidth',0.5)
+    ylim([-0.6 0.6]); 
+    xlim([0.5 6.5]);
+    set(gca,'Ytick',[-0.5 0 0.5],'YtickLabel',{'-0.5' '0' '0.5'},'FontSize',poster_font_size);
+    set(gca,'Xtick',1:6,'Xticklabel',{'S1' 'S2' 'S3' 'S4' 'S5' 'S6'},'FontSize',poster_font_size);
+    set(gca,'Xgrid','on');
+    set(gca,'Ygrid','on');
+    xlabel('All subjects','FontSize',poster_font_size);
+    title({'Correlation (\rho) of BMI accuracy with frontal gamma RPL'},'FontSize',poster_font_size); 
+end
+
+%% Scatter plot
+%ACC_marker_color = {'sb','^r','vm','ok','ok','+b','xr'};
+ACC_marker_color = {'+b','*r','sk','om','^k','vb','dr'};
+% Marker_face_color = {'None','None','None','k','None','None','None'};
+Marker_face_color = {'None','None','None','None','None','None','None'};
+h_acc = zeros(length(Subject_name_all),1);
+
+
+figure('Position',[1050 50 6*116 4*116]);
+Acc_plot = tight_subplot(1,1,0.01,[0.15 0.05],[0.15 0.15]);
+axes(Acc_plot);
+hold on; grid on;
+for subj_n = 1:length(Subject_name_all)       
+    %h_acc = plot(1:size(all_subjects_bmi_performance,1), 100*all_subjects_session_wise_accuracy_mean,'-sk','MarkerFaceColor','k','LineWidth',1);
+    %h_acc = errorbar(1:3, mean_bmi, std_bmi,'^k','MarkerFaceColor','k','LineWidth',1,'MarkerSize',10);   
+%     h_acc(subj_n) = plot(subject_wise_gamma_RPL(subj_n,:)./max(subject_wise_gamma_RPL(subj_n,:)), 100.*subject_wise_bmi_accuracy(subj_n,:),ACC_marker_color{subj_n},'MarkerFaceColor',Marker_face_color{subj_n},'LineWidth',0.5);
+    %h_acc(subj_n) = plot(subject_wise_gamma_RPL(subj_n,:), 100.*subject_wise_bmi_accuracy(subj_n,:),ACC_marker_color{subj_n},'MarkerFaceColor',Marker_face_color{subj_n},'LineWidth',0.5);
+    h_acc(subj_n) = plot(subject_wise_gamma_RPL(subj_n), 100.*subject_wise_bmi_accuracy(subj_n),ACC_marker_color{subj_n},'MarkerFaceColor',Marker_face_color{subj_n},'LineWidth',0.5);
+end
+%     hcl = plot(1:3,CL_by_day.*100,'-sb','MarkerFaceColor','b');
+%     hol = plot(1:3,OL_by_day.*100,'-sr','MarkerFaceColor','r');
+ylabel('BMI Accuracy (%)','FontSize',poster_font_size);
+% xlabel('Norm. Gamma Power','FontSize',poster_font_size);
+xlabel('Gamma Power','FontSize',poster_font_size);
+ylim([0 105]);
+% xlim([0 1.1]);
+xlim([0 0.3]);
+set(gca,'Xtick',[0 0.1 0.2 0.3], 'XTickLabel', {'0' '0.1' '0.2', '0.3'});
+% set(gca,'Xtick',[0 0.2 0.4 0.6 0.8 1], 'XTickLabel', {'0' '0.2' '0.4' '0.6' '0.8' '1'});
+set(gca,'Ytick',[0, 50, 100], 'YTickLabel', {'0' '50' '100'});
+legendflex(h_acc,Subject_labels,'nrow', length(Subject_name_all),...
+                'ref',gca,'anchor',[3 1],'buffer',[0  0],'box','on',...
+                'FontSize',poster_font_size,'title', 'Subjects', 'padding', [2 1 5]); % SouthWestOutside 
 
 
 

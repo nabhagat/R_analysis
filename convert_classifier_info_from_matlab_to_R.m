@@ -1,7 +1,7 @@
 % Subject Details
-Subject_name = 'S9014';
+Subject_name = 'S9020';
 Sess_num = '2';
-Cond_num = 1;  % 1 - Active; 2 - Passive; 3 - Triggered; 4 - Observation 
+Cond_num = 3;  % 1 - Active; 2 - Passive; 3 - Triggered; 4 - Observation 
 Block_num = 160;
 
 folder_path = ['D:\NRI_Project_Data\Clinical_study_Data\Subject_' Subject_name '\' Subject_name '_Session' num2str(Sess_num) '\']; % change2
