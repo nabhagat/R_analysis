@@ -614,7 +614,7 @@ for m = 1:length(unique_blocks)
 
             % Import markers into EEGLAB
             if estimate_eeg_emg_delays == 1
-                % Retrive old data set first 
+                % Retrive old data set first l
                 [ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, EMG_dataset_no,'retrieve',EEG_dataset_no,'study',0); 
             end
             EEG = pop_importevent( EEG, 'event',[folder_path Subject_name '_ses' num2str(closeloop_Sess_num)...
