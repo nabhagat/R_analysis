@@ -10,12 +10,13 @@
 %------------------------------------------------------------------------------------------------------------------------
 clear;
 eeglab; % Start EEGLAB
-% Subject Details
-Subject_name = 'LSGR';      %change1
-closeloop_Sess_num = 5;     %change2
+
+%% Subject Details
+Subject_name = 'S9007';      %change1
+closeloop_Sess_num = 14;     %change2
 raster_plot_block_num = 5;  % only required if plotting raster plot
-Cond_num = 3;
-folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_name '\' Subject_name '_Session' num2str(closeloop_Sess_num) '\']; 
+Cond_num = 1;
+folder_path = ['C:\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_' Subject_name '\' Subject_name '_Session' num2str(closeloop_Sess_num) '\']; 
 
 %ERWS_ses4
 %biceps_threshold = 50*ones(1,8);                  
@@ -47,19 +48,22 @@ folder_path = ['F:\Nikunj_Data\NRI_BMI_Mahi_Project_files\All_Subjects\Subject_'
 %triceps_threshold = [6 6 8 8 6.5 6.5 6.5 6.5];
 
 %LSGR_ses5
-biceps_threshold = [8 8 8 10 8 8 8 8 8];                  
-triceps_threshold = [6.5 6.5 6.5 8 7.2 7.2 7.2 7.2 7.2];
+% biceps_threshold = [8 8 8 10 8 8 8 8 8];                  
+% triceps_threshold = [6.5 6.5 6.5 8 7.2 7.2 7.2 7.2 7.2];
 
-% Flags for selecting parts of code
-import_event_markers_into_eeglab = 0; % must select estimate_eeg_emg_delays; both are dependent
+% Load biceps threshold directly from file
+biceps_threshold = csvread([folder_path Subject_name '_ses' num2str(closeloop_Sess_num) '_closeloop_emg_thresholds.csv'],1,2);
+triceps_threshold = csvread([folder_path Subject_name '_ses' num2str(closeloop_Sess_num) '_closeloop_emg_thresholds.csv'],1,3);
+%% Flags for selecting parts of code
+import_event_markers_into_eeglab = 1; % must select estimate_eeg_emg_delays; both are dependent
 estimate_eeg_emg_delays = 1;
 create_raster_plot = 0;
 
-% Fixed variables
+%% Fixed variables
 Fs_eeg = 500; 
 resamp_Fs = 500;            
 EEG_channels_to_import = 1:64;
-EMG_channels = [17 22 41 46];
+EMG_channels = [17 22 41 42 45 46 51 55];
 if create_raster_plot == 0
     EEG_channels_to_import(EMG_channels) = [];   % Dont remove EMG channels for raster plot
 end
@@ -72,7 +76,7 @@ EMG_detected_times = [];
 EEG_kinematic_latency = [];
 Accurate_ind_EEG_Go = [];
 
-% Load cloop_statistics.csv file 
+% Load cloop_statistics.csv or cloop_results.csv file 
 if create_raster_plot == 1
     cl_ses_data = dlmread([folder_path Subject_name '_ses' num2str(closeloop_Sess_num) '_block' num2str(raster_plot_block_num)...
         '_cloop_statistics.csv'],',',7,1); 
@@ -168,7 +172,7 @@ for m = 1:length(unique_blocks)
     eeg_move_trig = [];
     eeg_start_stop_samples = [];
     move_trig_label = 'S 16';  % 'S 32'; %'S  8'; %'100';
-    rest_trig_label = 'S  2';  % 'S  2'; %'200';
+    rest_trig_label = 'S  2';  % 'S  2'; %'200';~
     target_reached_trig_label = 'S  8';
     block_start_recvd = false;
     block_stop_recvd = false;
