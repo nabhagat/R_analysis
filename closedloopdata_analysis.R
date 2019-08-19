@@ -78,14 +78,14 @@ find_next_response_index <- function(response_trigs,catch_trigs){
 
   # Changes to be made if running this function independently
   directory <- "D:/NRI_Project_Data/Clinical_study_Data/"
-  Subject_name <- "S9017"             #1
-  columns_have_shifted <- 1           # Added on 10-23-2017. Set 1 for subjects 9017 (session 7 onwards), 9018, 9020
+  Subject_name <- "S9023"             #1
+  columns_have_shifted <- 1           # Added on 10-23-2017. Set 1 for subjects 9017 (session 7 onwards), 9018, 9020, 9023
   closeloop_Sess_num <- 14             #2
-  closedloop_Block_num <- c(1:6)      #3
+  closedloop_Block_num <- c(1:9)      #3
   Calib_cond_no  <- 1 #Comment                              #5 1 - Backdrive, 3-Triggered modes
   BMIClassifier_Training_Sess_num <- 2 #Comment
   BMIClassifier_Training_Block_num <- 160 #Comment
-  Subj_vel_threshold <- 1.1 # comment
+  Subj_vel_threshold <- 1.44 # comment
   Subject_impaired_side <- "right" # comment for non-function use
 
   velocity_threshold <- (Subj_vel_threshold)*(pi/180)      #4  # Velocity Thresholds: JF - 0.0232, LSGR - 0.008, PLSH - 0.0183, ERWS - 0.0123, BNBO - 0.0267
@@ -469,7 +469,13 @@ find_next_response_index <- function(response_trigs,catch_trigs){
                 #spatial_avg_index <- round((cl_BMI_data$marker_block[f_index,1]/500)*20) # Resample to 20 Hz - Index for Overall_spatial_chan_avg        
                 
                 # Directly get classification features - (Dec9,2014) No longer used because of imprecision in sample number. Instead used Overall_spatial_chan_avg
-                 cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index])
+                if(!isempty(feature_index)){
+                  cl_trial_stats[k,c("MRCP_slope","MRCP_neg_peak","MRCP_AUC","MRCP_mahalanobis")] <- t(cl_BMI_data$all_feature_vectors[,feature_index]) 
+                }
+                else{
+                  next # Added if...else condition in the event that feature_index is empty - Added on June30, 2018
+                }
+                 
                 
                 
                 # Segment the Overall Spatial Avg and use it to derive features
