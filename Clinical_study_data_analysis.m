@@ -54,14 +54,14 @@ h_likert = zeros(length(Subject_names),1);
 baseline_int = [-2.5 -2.25]; 
 segment_resting_eegdata = 0; 
 plot_c3i_poster_plot = 0; 
-plot_sfn_poster_plot = 0;  % use for paper
+plot_sfn_poster_plot = 1;  % Use this to generate Figure 3 for Clinical Trial paper
 plot_movement_smoothness = 0;
 compute_statistics = 0;
 perform_posthoc_RP_analysis = 0;
-perform_posthoc_EMG_analysis = 0; 
-correlate_RP_changes = 1;
+perform_posthoc_EMG_analysis = 0; % No longer used. Instead use perform_posthoc_RP_analysis
+correlate_RP_changes = 0; % Use this to generate Figure 7 for Clinical Trial paper
 compute_trial_averages = 0;
-compute_statistics_on_kinematics = 0;
+compute_statistics_on_kinematics = 0; % Use this to generate Figure 6 for Clinical Trial paper
 plot_bilateral_EMG_traces =  0;
 
 if segment_resting_eegdata == 1
@@ -132,6 +132,12 @@ if plot_sfn_poster_plot == 1
                  '_performance_optimized_conventional_smart.mat'];
         
         load(classifier_filename);
+        RP_filename = [directory    'Subject_' Subject_names{subj_n} '\' Subject_names{subj_n} '_Session2\' ...
+                 Subject_names{subj_n} '_ses2_cond' num2str(Cond_num(subj_n)) '_block' num2str(Block_num(subj_n))...
+                 '_average_causal.mat']; % Important in future to use non-causal filtering for identifying MRCP signals        
+        load(RP_filename);      
+        plotMRCPs(Average,Subject_names{subj_n}, Performance.classchannels, Performance.optimized_channels);
+        
         % Classifier with best accuracy
         [max_acc_val,max_acc_index] = max(Performance.eeg_accur); 
         
@@ -342,9 +348,14 @@ if plot_sfn_poster_plot == 1
         OvrNumAttempts_std = sqrt(sum(sum(((All_session_num_attempts_mean - OvrNumAttempts_mean).^2).*All_session_num_attempts_num_trials))/(((N-1)/N)*sum(All_session_num_attempts_num_trials(:))));
         disp(['Overall Num Attempts = ', num2str(OvrNumAttempts_mean), ' +/- ', num2str(OvrNumAttempts_std), ' ']) 
         
+        % Number of successful movements
         Num_of_valid_trials = squeeze(all_subjects_bmi_performance(:,5,:));
         mean(Num_of_valid_trials(:));
         std(Num_of_valid_trials(:));
+        
+        % Number of trials across sessions
+        Num_of_catch_trials = squeeze(all_subjects_bmi_performance(:,6,:));
+        Number_of_session_trials = Num_of_valid_trials + Num_of_catch_trials; 
         
  %%       
         figure('Position',[300 5 5*116 6*116]); 
@@ -1717,7 +1728,7 @@ if correlate_RP_changes == 1
         text(min(RPpeak_change(:,2))-0.5, 9.5, ['\rho = ', num2str(RP_peak_FMA_corr(2),2),', \itp\rm = ',num2str(RP_peak_FMA_corr_p(2),2)], 'FontSize', paper_font_size-2, 'Color', [1 0 0]);            
         xlabel('Amplitude change (\muV)');
         ylabel('FMA change post 1-week');
-        title('Contralateral FC_{1/2}');
+        title('Contralateral CP_{1/2}');
         
         
         subplot(1,2,1); hold on;
